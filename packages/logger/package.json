@@ -1,0 +1,16 @@
+{
+    "name": "logger",
+    "version": "1.0.0",
+    "private": true,
+    "main": "index.ts",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "pino": "^8.0.0",
+        "pino-pretty": "^10.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

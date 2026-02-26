@@ -1,0 +1,10 @@
+{
+    "name": "web",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "build": "echo \"Building web app...\"",
+        "lint": "echo \"Linting web app...\"",
+        "test": "echo \"Testing web app...\""
+    }
+}

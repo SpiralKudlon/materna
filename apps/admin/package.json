@@ -1,0 +1,10 @@
+{
+    "name": "admin",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "build": "echo \"Building admin app...\"",
+        "lint": "echo \"Linting admin app...\"",
+        "test": "echo \"Testing admin app...\""
+    }
+}

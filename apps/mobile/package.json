@@ -1,0 +1,10 @@
+{
+    "name": "mobile",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "build": "echo \"Building mobile app...\"",
+        "lint": "echo \"Linting mobile app...\"",
+        "test": "echo \"Testing mobile app...\""
+    }
+}
