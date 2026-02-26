@@ -1,0 +1,34 @@
+{
+    "app": {
+        "title": "Mfumo wa Akina Mama",
+        "offline_banner": "Uko nje ya mtandao. Usajili utahifadhiwa kwenye kifaa.",
+        "syncing": "Inasawazisha taarifa zinazosubiri..."
+    },
+    "registration": {
+        "title": "Usajili wa Mgonjwa",
+        "steps": {
+            "personal": "Maelezo Binafsi",
+            "contact": "Mawasiliano",
+            "medical": "Historia ya Matibabu",
+            "vitals": "Vipimo vya Afya",
+            "consents": "Idhini"
+        },
+        "buttons": {
+            "next": "Inayofuata",
+            "back": "Rudi",
+            "submit": "Wasilisha Usajili"
+        },
+        "fields": {
+            "fullName": "Jina Kamili",
+            "dob": "Tarehe ya Kuzaliwa",
+            "phone": "Nambari ya Simu",
+            "email": "Barua Pepe",
+            "hivStatus": "Hali ya Virusi vya Ukimwi (VVU)",
+            "pregnancyStatus": "Mjamzito",
+            "systolic": "Shinikizo la Damu (Juu)",
+            "diastolic": "Shinikizo la Damu (Chini)",
+            "agreeData": "Ninakubali kuchakatwa kwa data zangu"
+        },
+        "success": "Usajili umehifadhiwa kikamilifu!"
+    }
+}

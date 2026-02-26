@@ -1,0 +1,34 @@
+{
+    "app": {
+        "title": "Maternal System",
+        "offline_banner": "You are currently offline. Registrations will be saved locally.",
+        "syncing": "Syncing pending data..."
+    },
+    "registration": {
+        "title": "Patient Registration",
+        "steps": {
+            "personal": "Personal Details",
+            "contact": "Contact Info",
+            "medical": "Medical History",
+            "vitals": "Vitals",
+            "consents": "Consents"
+        },
+        "buttons": {
+            "next": "Next",
+            "back": "Back",
+            "submit": "Submit Registration"
+        },
+        "fields": {
+            "fullName": "Full Name",
+            "dob": "Date of Birth",
+            "phone": "Phone Number",
+            "email": "Email Address",
+            "hivStatus": "HIV Status",
+            "pregnancyStatus": "Currently Pregnant",
+            "systolic": "Blood Pressure (Systolic)",
+            "diastolic": "Blood Pressure (Diastolic)",
+            "agreeData": "I agree to data processing"
+        },
+        "success": "Registration stored successfully!"
+    }
+}
