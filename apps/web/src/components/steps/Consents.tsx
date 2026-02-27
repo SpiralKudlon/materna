@@ -1,8 +1,8 @@
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '../ui/form';
+import { FormField, FormItem, FormLabel, FormControl } from '../ui/form';
 import { Checkbox } from '../ui/checkbox';
-import { PatientRegistration } from '../../schemas/patientSchema';
+import type { PatientRegistration } from '../../schemas/patientSchema';
 
 export function Consents() {
     const { control } = useFormContext<PatientRegistration>();

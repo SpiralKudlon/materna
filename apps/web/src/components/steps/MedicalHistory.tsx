@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '../ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { PatientRegistration } from '../../schemas/patientSchema';
+import type { PatientRegistration } from '../../schemas/patientSchema';
 
 export function MedicalHistory() {
     const { control } = useFormContext<PatientRegistration>();

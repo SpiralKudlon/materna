@@ -2,7 +2,7 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
-import { PatientRegistration } from '../../schemas/patientSchema';
+import type { PatientRegistration } from '../../schemas/patientSchema';
 
 export function Vitals() {
     const { control } = useFormContext<PatientRegistration>();
