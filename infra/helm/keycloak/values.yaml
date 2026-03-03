@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Keycloak 24 – Bitnami Helm Chart values.yaml
+# Chart version: 21.x  →  Keycloak 24.x
+# https://github.com/bitnami/charts/tree/main/bitnami/keycloak
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ---------------------------------------------------------------------------
+# Global image settings
+# ---------------------------------------------------------------------------
+image:
+  registry: docker.io
+  repository: bitnami/keycloak
+  tag: "24.0.5-debian-12-r0"
+  pullPolicy: IfNotPresent
+
+# ---------------------------------------------------------------------------
+# Keycloak authentication
+# Passwords are injected via `helm_release.set_sensitive` in Terraform;
+# placeholders here are never used in production.
+# ---------------------------------------------------------------------------
+auth:
+  adminUser: admin
+  # adminPassword: <injected by Terraform>
+
+# ---------------------------------------------------------------------------
+# Production mode + HTTPS
+# ---------------------------------------------------------------------------
+production: true
+
+# Keycloak 24 listens on 8080 (HTTP) and 8443 (HTTPS) internally.
+# TLS termination happens at the AWS ALB; Keycloak receives plain HTTP
+# behind the load balancer but tells clients the scheme is HTTPS.
+proxy: edge
+httpRelativePath: "/"
+
+extraEnvVars:
+  - name: KC_HOSTNAME
+    value: "$(KC_HOSTNAME)" # overridden by Terraform `set` blocks
+  - name: KC_HOSTNAME_STRICT
+    value: "true"
+  - name: KC_HTTP_ENABLED
+    value: "true"
+  - name: KC_HEALTH_ENABLED
+    value: "true"
+  - name: KC_METRICS_ENABLED
+    value: "true"
+
+# Reference the Kubernetes secret created by Terraform for the API client
+extraEnvVarsSecret: keycloak-credentials
+
+# ---------------------------------------------------------------------------
+# External PostgreSQL 16 (host/port/db/user injected by Terraform)
+# ---------------------------------------------------------------------------
+postgresql:
+  enabled: false # Disable bundled PostgreSQL
+
+externalDatabase:
+  host: "" # overridden by Terraform set{}
+  port: 5432
+  database: keycloak
+  user: keycloak
+  # password: <injected by Terraform>
+  existingSecret: "" # we use Terraform set_sensitive instead
+
+# ---------------------------------------------------------------------------
+# Replica count and resource limits
+# ---------------------------------------------------------------------------
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+# ---------------------------------------------------------------------------
+# Cache (JGroups distributed sessions across replicas)
+# ---------------------------------------------------------------------------
+cache:
+  enabled: true
+  stackName: kubernetes # built-in JGroups K8s discovery
+
+# ---------------------------------------------------------------------------
+# Realm import on first boot
+# Keycloak 24 auto-imports any realm JSON found in /opt/bitnami/keycloak/data/import/
+# ---------------------------------------------------------------------------
+extraVolumes:
+  - name: realm-config
+    configMap:
+      name: keycloak-realm-config
+
+extraVolumeMounts:
+  - name: realm-config
+    mountPath: /opt/bitnami/keycloak/data/import/
+    readOnly: true
+
+extraArgs: "--import-realm"
+
+# ---------------------------------------------------------------------------
+# Ingress (AWS ALB via aws-load-balancer-controller)
+# TLS terminated at the ALB using the ACM certificate injected by Terraform.
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  ingressClassName: alb
+  hostname: "" # overridden by Terraform set{}
+  path: /
+  pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    # Certificate ARN injected by Terraform
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ""
+
+# ---------------------------------------------------------------------------
+# Pod disruption budget (tolerate at most 1 unavailable replica)
+# ---------------------------------------------------------------------------
+pdb:
+  create: true
+  minAvailable: 1
+
+# ---------------------------------------------------------------------------
+# Service account
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: keycloak
+
+# ---------------------------------------------------------------------------
+# Health probes
+# ---------------------------------------------------------------------------
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 30
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+# ---------------------------------------------------------------------------
+# Metrics (Prometheus)
+# ---------------------------------------------------------------------------
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false # set to true if you have Prometheus Operator installed

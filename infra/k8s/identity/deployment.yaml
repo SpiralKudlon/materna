@@ -1,0 +1,173 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Identity Service – Kubernetes Deployment with Keycloak env vars
+#
+# This manifest feeds REALM_PUBLIC_KEY and CLIENT_SECRET into the identity
+# service pods straight from the Kubernetes Secret created by Terraform.
+#
+# Apply after `terraform apply`:
+#   kubectl apply -f infra/k8s/identity/deployment.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: identity
+  labels:
+    app.kubernetes.io/managed-by: terraform
+
+---
+# ExternalSecret syncs the CLIENT_SECRET from AWS Secrets Manager
+# Requires: external-secrets-operator installed in the cluster
+# Install: helm install external-secrets external-secrets/external-secrets -n external-secrets-operator
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: aws-secretsmanager
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: af-south-1 # override with var.aws_region
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: external-secrets-sa
+            namespace: external-secrets-operator
+
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: identity-keycloak-secrets
+  namespace: identity
+spec:
+  refreshInterval: 5m
+  secretStoreRef:
+    name: aws-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: identity-keycloak-secrets
+    creationPolicy: Owner
+  data:
+    # CLIENT_SECRET – from the api-client-secret entry in Secrets Manager
+    - secretKey: CLIENT_SECRET
+      remoteRef:
+        key: /maternal-system-eks/keycloak/api-client-secret # matches Terraform resource name
+        property: client_secret
+
+---
+# ConfigMap: Keycloak OIDC metadata that does NOT need to be secret
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: identity-keycloak-config
+  namespace: identity
+data:
+  # The identity service trusts tokens issued by this issuer
+  KEYCLOAK_ISSUER: "https://auth.maternal-system.example.com/realms/maternal-system"
+  KEYCLOAK_JWKS_URI: "https://auth.maternal-system.example.com/realms/maternal-system/protocol/openid-connect/certs"
+  KEYCLOAK_CLIENT_ID: "api-server"
+  # REALM_PUBLIC_KEY is fetched at runtime from the JWKS endpoint above.
+  # No need to hard-code it; use a JWKS client (e.g. `jwks-rsa`) to
+  # retrieve and cache the signing key automatically. The value below is
+  # a startup hint for environments where network access to Keycloak may
+  # be delayed; replace with the actual key after first deployment.
+  REALM_PUBLIC_KEY: "REPLACE_AFTER_FIRST_DEPLOY_FROM_KEYCLOAK_ADMIN_UI"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+  namespace: identity
+  labels:
+    app: identity
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: identity
+  template:
+    metadata:
+      labels:
+        app: identity
+    spec:
+      serviceAccountName: identity
+      containers:
+        - name: identity
+          image: maternal-system/identity:latest # replace with your ECR URI
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            # ── Keycloak OIDC (non-sensitive) ──────────────────────────────
+            - name: KEYCLOAK_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: identity-keycloak-config
+                  key: KEYCLOAK_ISSUER
+            - name: KEYCLOAK_JWKS_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: identity-keycloak-config
+                  key: KEYCLOAK_JWKS_URI
+            - name: KEYCLOAK_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: identity-keycloak-config
+                  key: KEYCLOAK_CLIENT_ID
+            # REALM_PUBLIC_KEY: supply either from ConfigMap (static) or
+            # let the service fetch it dynamically via JWKS.
+            - name: REALM_PUBLIC_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: identity-keycloak-config
+                  key: REALM_PUBLIC_KEY
+            # ── Keycloak secrets (from ExternalSecret → K8s Secret) ────────
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: identity-keycloak-secrets
+                  key: CLIENT_SECRET
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: identity
+  namespace: identity
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity
+  namespace: identity
+spec:
+  selector:
+    app: identity
+  ports:
+    - port: 80
+      targetPort: 3000
+      name: http
+  type: ClusterIP

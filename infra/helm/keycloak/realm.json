@@ -1,0 +1,142 @@
+{
+    "id": "maternal-system",
+    "realm": "maternal-system",
+    "displayName": "Maternal System",
+    "displayNameHtml": "<div class=\"kc-logo-text\"><span>Maternal System</span></div>",
+    "enabled": true,
+    "sslRequired": "all",
+    "registrationAllowed": false,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": false,
+    "bruteForceProtected": true,
+    "permanentLockout": false,
+    "maxFailureWaitSeconds": 900,
+    "minimumQuickLoginWaitSeconds": 60,
+    "waitIncrementSeconds": 60,
+    "quickLoginCheckMilliSeconds": 1000,
+    "maxDeltaTimeSeconds": 43200,
+    "failureFactor": 5,
+    "accessTokenLifespan": 300,
+    "accessTokenLifespanForImplicitFlow": 900,
+    "ssoSessionIdleTimeout": 1800,
+    "ssoSessionMaxLifespan": 36000,
+    "offlineSessionIdleTimeout": 2592000,
+    "roles": {
+        "realm": [
+            {
+                "name": "chw",
+                "description": "Community Health Worker"
+            },
+            {
+                "name": "nurse",
+                "description": "Nurse / Midwife"
+            },
+            {
+                "name": "admin",
+                "description": "System Administrator"
+            }
+        ]
+    },
+    "clients": [
+        {
+            "_comment": "─── Confidential client: backend identity / API service ───────────────────",
+            "clientId": "api-server",
+            "name": "Maternal System API",
+            "description": "Backend Fastify identity service — uses authorization_code + client_credentials",
+            "enabled": true,
+            "publicClient": false,
+            "bearerOnly": false,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": true,
+            "authorizationServicesEnabled": false,
+            "protocol": "openid-connect",
+            "secret": "${env.api-client-secret}",
+            "redirectUris": [
+                "https://api.maternal-system.example.com/*"
+            ],
+            "webOrigins": [
+                "https://api.maternal-system.example.com"
+            ],
+            "attributes": {
+                "access.token.lifespan": "300",
+                "use.refresh.tokens": "true",
+                "pkce.code.challenge.method": "S256"
+            },
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ],
+            "optionalClientScopes": [
+                "address",
+                "phone",
+                "offline_access"
+            ]
+        },
+        {
+            "_comment": "─── Public client: React web frontend ─────────────────────────────────────",
+            "clientId": "web-frontend",
+            "name": "Maternal System Web",
+            "description": "React SPA — uses PKCE authorization_code flow (no client_secret)",
+            "enabled": true,
+            "publicClient": true,
+            "bearerOnly": false,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "protocol": "openid-connect",
+            "redirectUris": [
+                "https://maternal-system.example.com/*",
+                "http://localhost:5173/*"
+            ],
+            "webOrigins": [
+                "https://maternal-system.example.com",
+                "http://localhost:5173"
+            ],
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "access.token.lifespan": "300"
+            },
+            "defaultClientScopes": [
+                "openid",
+                "profile",
+                "email",
+                "roles"
+            ],
+            "optionalClientScopes": [
+                "offline_access"
+            ]
+        }
+    ],
+    "clientScopes": [
+        {
+            "name": "roles",
+            "description": "Realm roles mapped into the access token",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "true"
+            },
+            "protocolMappers": [
+                {
+                    "name": "realm roles",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "realm_access.roles",
+                        "jsonType.label": "String",
+                        "multivalued": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        }
+    ],
+    "users": []
+}
