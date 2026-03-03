@@ -1,4 +1,5 @@
 export type RiskTier = 'LOW' | 'MODERATE' | 'HIGH';
+export type RiskSource = 'deterministic' | 'weighted';
 
 export interface Vitals {
     vaginal_bleeding?: 'NONE' | 'MILD' | 'MODERATE' | 'SEVERE';
@@ -35,22 +36,49 @@ export interface AssessmentData {
     factors: ClinicalFactors;
 }
 
-export interface RiskResult {
-    tier: RiskTier;
-    score: number;
-    isDeterministicHigh: boolean;
-}
+/** Discriminated union: deterministic bypass vs weighted scoring */
+export type RiskResult =
+    | { source: 'deterministic'; tier: 'HIGH'; score: 100; isDeterministicHigh: true }
+    | { source: 'weighted'; tier: RiskTier; score: number; isDeterministicHigh: false };
+
+/**
+ * Default evidence-informed weights (sum = 100 if all 20 factors are true).
+ * Higher-weighted factors reflect stronger independent predictors found in literature.
+ * Callers can supply custom weights to reflect local clinical protocols.
+ */
+export const DEFAULT_WEIGHTS: Record<keyof ClinicalFactors, number> = {
+    previous_preeclampsia: 12,
+    chronic_hypertension: 10,
+    multiple_gestation: 8,
+    renal_disease: 8,
+    autoimmune_disease: 7,
+    diabetes: 7,
+    history_of_stillbirth: 6,
+    severe_headache: 6,
+    visual_disturbances: 5,
+    epigastric_pain: 5,
+    reduced_fetal_movement: 5,
+    fundal_height_discrepancy: 4,
+    abdominal_pain: 4,
+    fever: 3,
+    foul_smelling_discharge: 3,
+    age_lt_18: 3,
+    age_gt_35: 3,
+    bmi_gt_30: 3,
+    previous_c_section: 3,
+    edema: 3,
+};
 
 export class RiskEngine {
-    public evaluate(data: AssessmentData): RiskResult {
-        const isDeterministicHigh = this.evaluateTier1(data.vitals);
+    private readonly weights: Record<keyof ClinicalFactors, number>;
 
-        if (isDeterministicHigh) {
-            return {
-                tier: 'HIGH',
-                score: 100,
-                isDeterministicHigh: true
-            };
+    constructor(weights: Partial<Record<keyof ClinicalFactors, number>> = {}) {
+        this.weights = { ...DEFAULT_WEIGHTS, ...weights };
+    }
+
+    public evaluate(data: AssessmentData): RiskResult {
+        if (this.evaluateTier1(data.vitals)) {
+            return { source: 'deterministic', tier: 'HIGH', score: 100, isDeterministicHigh: true };
         }
 
         const score = this.evaluateTier2(data.factors);
@@ -62,46 +90,25 @@ export class RiskEngine {
             tier = 'MODERATE';
         }
 
-        return {
-            tier,
-            score,
-            isDeterministicHigh: false
-        };
+        return { source: 'weighted', tier, score, isDeterministicHigh: false };
     }
 
     private evaluateTier1(vitals: Vitals): boolean {
         if (vitals.vaginal_bleeding === 'SEVERE') return true;
         if (vitals.loss_of_consciousness === true) return true;
-        if (vitals.blood_pressure_systolic !== undefined && vitals.blood_pressure_systolic > 160) return true;
-        if (vitals.blood_pressure_diastolic !== undefined && vitals.blood_pressure_diastolic > 110) return true;
+        // 🟡 Fix: use >= per ACOG severe-range criteria (was strictly >)
+        if (vitals.blood_pressure_systolic !== undefined && vitals.blood_pressure_systolic >= 160) return true;
+        if (vitals.blood_pressure_diastolic !== undefined && vitals.blood_pressure_diastolic >= 110) return true;
         return false;
     }
 
     private evaluateTier2(factors: ClinicalFactors): number {
         let score = 0;
-
-        // 20 factors mapped to points (5 points each to cleanly sum to 100)
-        if (factors.age_lt_18) score += 5;
-        if (factors.age_gt_35) score += 5;
-        if (factors.previous_preeclampsia) score += 5;
-        if (factors.multiple_gestation) score += 5;
-        if (factors.bmi_gt_30) score += 5;
-        if (factors.chronic_hypertension) score += 5;
-        if (factors.diabetes) score += 5;
-        if (factors.renal_disease) score += 5;
-        if (factors.autoimmune_disease) score += 5;
-        if (factors.history_of_stillbirth) score += 5;
-        if (factors.previous_c_section) score += 5;
-        if (factors.fundal_height_discrepancy) score += 5;
-        if (factors.reduced_fetal_movement) score += 5;
-        if (factors.fever) score += 5;
-        if (factors.foul_smelling_discharge) score += 5;
-        if (factors.abdominal_pain) score += 5;
-        if (factors.severe_headache) score += 5;
-        if (factors.visual_disturbances) score += 5;
-        if (factors.epigastric_pain) score += 5;
-        if (factors.edema) score += 5;
-
-        return Math.min(score, 100);
+        for (const key of Object.keys(this.weights) as Array<keyof ClinicalFactors>) {
+            if (factors[key]) {
+                score += this.weights[key];
+            }
+        }
+        return Math.min(Math.round(score), 100);
     }
 }

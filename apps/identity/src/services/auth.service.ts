@@ -10,7 +10,7 @@ export class AuthService {
         }
 
         const salt = crypto.randomBytes(16).toString('hex');
-        const hash = crypto.pbkdf2Sync(input.password, salt, 1000, 64, 'sha512').toString('hex');
+        const hash = crypto.pbkdf2Sync(input.password, salt, 210_000, 64, 'sha512').toString('hex');
 
         const user = await userRepository.create({
             id: crypto.randomUUID(),

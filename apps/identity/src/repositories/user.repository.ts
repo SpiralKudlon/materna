@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 export interface User {
     id: string;
     email: string;

@@ -30,7 +30,10 @@ resource "aws_eks_cluster" "main" {
     subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
     security_group_ids      = [aws_security_group.eks_cluster.id]
     endpoint_private_access = true
-    endpoint_public_access  = true
+    # 🟡 Fix: Disable public API server endpoint for PHI/PII workloads.
+    # Use AWS VPN, Direct Connect, or SSM Session Manager to reach the cluster.
+    # If external CI-runner access is needed, set to true and restrict public_access_cidrs.
+    endpoint_public_access  = false
   }
 
   # Ensure CloudWatch logging for the control plane

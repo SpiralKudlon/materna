@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "fastify": "^4.26.2",
+        "@fastify/rate-limit": "^9.1.0",
         "zod": "^3.22.4"
     },
     "devDependencies": {

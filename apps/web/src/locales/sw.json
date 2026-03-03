@@ -29,6 +29,7 @@
             "diastolic": "Shinikizo la Damu (Chini)",
             "agreeData": "Ninakubali kuchakatwa kwa data zangu"
         },
-        "success": "Usajili umehifadhiwa kikamilifu!"
+        "success": "Usajili umehifadhiwa kikamilifu!",
+        "step_counter": "Hatua {{current}} kati ya {{total}}"
     }
 }

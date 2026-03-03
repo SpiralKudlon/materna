@@ -29,6 +29,7 @@
             "diastolic": "Blood Pressure (Diastolic)",
             "agreeData": "I agree to data processing"
         },
-        "success": "Registration stored successfully!"
+        "success": "Registration stored successfully!",
+        "step_counter": "Step {{current}} of {{total}}"
     }
 }

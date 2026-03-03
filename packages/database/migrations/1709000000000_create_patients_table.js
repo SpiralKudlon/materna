@@ -12,6 +12,23 @@ exports.up = (pgm) => {
     // 1. Ensure pgcrypto is available for field-level encryption
     pgm.createExtension('pgcrypto', { ifNotExists: true });
 
+    /*
+     * IMPORTANT – Encryption Key Management
+     * ======================================
+     * The `pgp_sym_encrypt`/`pgp_sym_decrypt` calls (used in your application
+     * queries for full_name, phone, and hiv_status) must receive the encryption
+     * key at query time.  The recommended pattern is:
+     *
+     *   -- At connection / transaction start:
+     *   SET LOCAL app.encryption_key = 'your-secret-key-from-vault';
+     *
+     *   -- In queries:
+     *   pgp_sym_encrypt(plain, current_setting('app.encryption_key', false))
+     *
+     * Inject the key value from AWS Secrets Manager (or HashiCorp Vault) into
+     * the connection string at startup; NEVER hard-code it in source code.
+     */
+
     // 2. Create the patients table definition
     // Note: Encrypted fields (full_name, phone, hiv_status) are stored as `bytea` 
     // because `pgp_sym_encrypt` returns bytea. 
@@ -59,8 +76,9 @@ exports.up = (pgm) => {
     // Adjust this setting variable to match your application's authentication configuration (e.g., Supabase uses auth.uid()).
     pgm.createPolicy('patients', 'patients_access_own_records', {
         command: 'ALL',
-        // Example: user_id = current_setting('app.current_user_id', true)::uuid
-        using: "user_id = current_setting('app.current_user_id', true)::uuid",
+        // 🟡 Fix: use false (strict) so PostgreSQL ERRORs when the variable is unset
+        // rather than silently evaluating NULL = NULL (false) and hiding all rows.
+        using: "user_id = current_setting('app.current_user_id', false)::uuid",
     });
 
     // Policy: CHVs can only see patients assigned to them.
@@ -70,7 +88,7 @@ exports.up = (pgm) => {
         using: `EXISTS (
       SELECT 1 FROM chv_patient_assignments cpa 
       WHERE cpa.patient_id = patients.patient_id 
-      AND cpa.chv_id = current_setting('app.current_user_id', true)::uuid
+      AND cpa.chv_id = current_setting('app.current_user_id', false)::uuid
     )`,
     });
 };

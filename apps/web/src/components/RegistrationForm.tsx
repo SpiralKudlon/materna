@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
+import type { Path } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -57,7 +58,7 @@ export function RegistrationForm() {
 
     const handleNext = async () => {
         // We validate only the current step's fields before proceeding
-        let fieldsToValidate: any = [];
+        let fieldsToValidate: Path<PatientRegistration>[] = [];
         if (currentStep === 0) fieldsToValidate = ['personalDetails.fullName', 'personalDetails.dob'];
         if (currentStep === 1) fieldsToValidate = ['contactInfo.phone', 'contactInfo.email'];
         if (currentStep === 2) fieldsToValidate = ['medicalHistory.hivStatus', 'medicalHistory.pregnancyStatus'];
@@ -68,7 +69,8 @@ export function RegistrationForm() {
 
         if (isValid) {
             if (currentStep === STEPS.length - 1) {
-                processSubmit(methods.getValues());
+                // 🟡 Fix: await processSubmit so failures surface correctly
+                await processSubmit(methods.getValues());
             } else {
                 setCurrentStep(prev => prev + 1);
             }
@@ -105,7 +107,7 @@ export function RegistrationForm() {
                 <div className="flex justify-between items-center mb-2">
                     <CardTitle className="text-2xl font-bold">{t('registration.title')}</CardTitle>
                     <span className="text-sm rounded-full bg-primary/10 text-primary px-3 py-1 font-medium">
-                        Step {currentStep + 1} of {STEPS.length}
+                        {t('registration.step_counter', { current: currentStep + 1, total: STEPS.length })}
                     </span>
                 </div>
                 <CardDescription>

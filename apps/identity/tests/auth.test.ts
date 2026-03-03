@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeEach } from 'vitest';
+import { test, expect, describe, beforeEach, afterEach } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { userRepository } from '../src/repositories/user.repository.js';
 import type { FastifyInstance } from 'fastify';
@@ -9,6 +9,10 @@ describe('Auth Service', () => {
     beforeEach(async () => {
         app = buildApp();
         await userRepository.clear();
+    });
+
+    afterEach(async () => {
+        await app.close();
     });
 
     test('POST /api/v1/auth/register - success', async () => {
