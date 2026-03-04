@@ -62,6 +62,6 @@ async function gatekeeperPlugin(
 
 export default fp(gatekeeperPlugin, {
     name: 'gatekeeper',
-    fastify: '4.x',
+    fastify: '>=4.x',
     dependencies: ['jwt-keycloak'],
 });

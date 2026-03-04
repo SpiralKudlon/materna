@@ -223,5 +223,5 @@ async function jwtPlugin(fastify: FastifyInstance, opts: JwtPluginOptions): Prom
 
 export default fp(jwtPlugin, {
     name: 'jwt-keycloak',
-    fastify: '4.x',
+    fastify: '>=4.x',
 });

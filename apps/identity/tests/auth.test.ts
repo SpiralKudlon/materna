@@ -187,6 +187,74 @@ describe('POST /api/v1/auth/register', () => {
         expect(mockDeleteUser).toHaveBeenCalledWith('kc-user-uuid-123');
         await localApp.close();
     });
+
+    it('400 – invalid email format', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'not-an-email', password: 'Password1', name: 'Jane Doe', role: 'PATIENT' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – password missing uppercase letter', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'jane@example.com', password: 'password1', name: 'Jane Doe', role: 'PATIENT' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – password missing number', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'jane@example.com', password: 'Password', name: 'Jane Doe', role: 'PATIENT' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – missing name field', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'jane@example.com', password: 'Password1', role: 'PATIENT' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – name too short (1 char)', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'jane@example.com', password: 'Password1', name: 'J', role: 'PATIENT' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – empty body', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: {},
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('201 – ADMIN role is accepted and user is created', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/register',
+            payload: { email: 'admin@example.com', password: 'AdminPass1', name: 'Admin User', role: 'ADMIN' },
+        });
+        expect(res.statusCode).toBe(201);
+        const body = JSON.parse(res.body);
+        // Verify the response contains a user profile (role comes from DB mock)
+        expect(body.data).toHaveProperty('id');
+        expect(body.data).toHaveProperty('email');
+        expect(body.data).toHaveProperty('keycloak_id');
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -232,6 +300,44 @@ describe('POST /api/v1/auth/login', () => {
             payload: { email: 'wrong@example.com', password: 'WrongPass1' },
         });
         expect(res.statusCode).toBe(401);
+    });
+
+    it('400 – missing email field', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/login',
+            payload: { password: 'Password1' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – invalid email format', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/login',
+            payload: { email: 'not-valid', password: 'Password1' },
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('400 – empty body', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/login',
+            payload: {},
+        });
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('200 – response contains correct token_type', async () => {
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/v1/auth/login',
+            payload: { email: 'jane@example.com', password: 'Password1' },
+        });
+        expect(res.statusCode).toBe(200);
+        const { data } = JSON.parse(res.body);
+        expect(data.token_type).toBe('Bearer');
     });
 });
 
