@@ -19,6 +19,21 @@ vi.stubEnv('CLIENT_SECRET', 'test-secret');
 vi.stubEnv('KEYCLOAK_ADMIN_USERNAME', 'admin');
 vi.stubEnv('KEYCLOAK_ADMIN_PASSWORD', 'admin');
 
+// Mock ioredis (may not be installed offline)
+vi.mock('ioredis', () => ({
+    default: vi.fn().mockImplementation(() => ({
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockResolvedValue('OK'),
+        del: vi.fn().mockResolvedValue(0),
+        incr: vi.fn().mockResolvedValue(1),
+        pipeline: vi.fn(() => ({
+            set: vi.fn().mockReturnThis(),
+            exec: vi.fn().mockResolvedValue([]),
+        })),
+        quit: vi.fn().mockResolvedValue('OK'),
+    })),
+}));
+
 // ── Mock Keycloak service ─────────────────────────────────────────────────
 const mockCreateUser = vi.fn().mockResolvedValue('kc-user-uuid-123');
 const mockDeleteUser = vi.fn().mockResolvedValue(undefined);

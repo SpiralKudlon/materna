@@ -1,11 +1,17 @@
+import { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from './contexts/AuthContext';
+import { LoginPage } from './pages/LoginPage';
+import { MfaSetup } from './components/MfaSetup';
 import { RegistrationForm } from './components/RegistrationForm';
 import { useSyncQueue } from './hooks/useSyncQueue';
-import { WifiOff, Activity, Globe } from 'lucide-react';
+import { WifiOff, Activity, Globe, LogOut } from 'lucide-react';
 import { Button } from './components/ui/button';
 
-export function App() {
+function ProtectedLayout() {
   const { t, i18n } = useTranslation();
+  const { user, logout } = useAuth();
   const { isOnline, syncing } = useSyncQueue();
 
   const toggleLanguage = () => {
@@ -22,15 +28,23 @@ export function App() {
             <Activity className="h-6 w-6" />
             {t('app.title')}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {syncing && (
               <span className="text-sm font-medium animate-pulse flex items-center gap-2 bg-primary-foreground/20 px-3 py-1 rounded-full">
                 <Globe className="h-4 w-4" />
                 {t('app.syncing')}
               </span>
             )}
+            {user && (
+              <span className="text-sm hidden sm:inline opacity-80">
+                {user.name || user.email}
+              </span>
+            )}
             <Button variant="secondary" size="sm" onClick={toggleLanguage} className="font-semibold shadow-sm">
               {i18n.language === 'en' ? 'Swahili' : 'English'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -44,7 +58,7 @@ export function App() {
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
         <RegistrationForm />
       </main>
@@ -56,6 +70,63 @@ export function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <Activity className="h-10 w-10 text-emerald-600 animate-bounce" />
+          <span className="text-slate-500 text-sm font-medium">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function MfaGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const [mfaCompleted, setMfaCompleted] = useState(false);
+
+  if (user?.requiresMfa && !mfaCompleted) {
+    return <MfaSetup onComplete={() => setMfaCompleted(true)} />;
+  }
+
+  return <>{children}</>;
+}
+
+export function App() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          <RequireAuth>
+            <MfaGate>
+              <ProtectedLayout />
+            </MfaGate>
+          </RequireAuth>
+        }
+      />
+    </Routes>
   );
 }
 

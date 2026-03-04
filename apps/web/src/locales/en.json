@@ -31,5 +31,39 @@
         },
         "success": "Registration stored successfully!",
         "step_counter": "Step {{current}} of {{total}}"
+    },
+    "login": {
+        "title": "Maternal System",
+        "subtitle": "Sign in to continue",
+        "heading": "Welcome back",
+        "email_prompt": "Enter your email and password",
+        "phone_prompt": "Enter your phone number and password",
+        "email": "Email",
+        "phone": "Phone",
+        "email_placeholder": "name@example.com",
+        "phone_placeholder": "+254712345678",
+        "password": "Password",
+        "forgot": "Forgot password?",
+        "submit": "Sign in",
+        "signing_in": "Signing in...",
+        "use_phone": "Use phone number instead",
+        "use_email": "Use email instead"
+    },
+    "mfa": {
+        "title": "Two-Factor Authentication Required",
+        "description": "As a healthcare provider, your account requires an additional layer of security.",
+        "step_1": "Install an authenticator app",
+        "step_2": "Scan the QR code or enter the secret key",
+        "step_3": "Enter the 6-digit code to verify",
+        "begin_setup": "Begin Setup",
+        "skip": "Skip for now (not recommended)",
+        "scan_title": "Scan QR Code",
+        "scan_desc": "Open your authenticator app and scan this QR code",
+        "manual_key": "Can't scan? Enter this key manually:",
+        "enter_code": "Enter the 6-digit code",
+        "verify": "Verify & Activate",
+        "invalid_code": "Enter a valid 6-digit code",
+        "verify_failed": "Verification failed. Try again.",
+        "help": "Help with authenticator apps"
     }
 }

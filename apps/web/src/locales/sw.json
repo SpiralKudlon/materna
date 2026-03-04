@@ -31,5 +31,39 @@
         },
         "success": "Usajili umehifadhiwa kikamilifu!",
         "step_counter": "Hatua {{current}} kati ya {{total}}"
+    },
+    "login": {
+        "title": "Mfumo wa Akina Mama",
+        "subtitle": "Ingia kuendelea",
+        "heading": "Karibu tena",
+        "email_prompt": "Weka barua pepe na nenosiri lako",
+        "phone_prompt": "Weka nambari yako ya simu na nenosiri",
+        "email": "Barua Pepe",
+        "phone": "Simu",
+        "email_placeholder": "jina@mfano.com",
+        "phone_placeholder": "+254712345678",
+        "password": "Nenosiri",
+        "forgot": "Umesahau nenosiri?",
+        "submit": "Ingia",
+        "signing_in": "Inaingia...",
+        "use_phone": "Tumia nambari ya simu badala yake",
+        "use_email": "Tumia barua pepe badala yake"
+    },
+    "mfa": {
+        "title": "Uthibitishaji wa Hatua Mbili Unahitajika",
+        "description": "Kama mtoa huduma za afya, akaunti yako inahitaji usalama wa ziada.",
+        "step_1": "Sakinisha programu ya uthibitishaji",
+        "step_2": "Changanua msimbo wa QR au ingiza ufunguo",
+        "step_3": "Ingiza msimbo wa tarakimu 6 kuthibitisha",
+        "begin_setup": "Anza Usanidi",
+        "skip": "Ruka kwa sasa (haipendekezi)",
+        "scan_title": "Changanua Msimbo wa QR",
+        "scan_desc": "Fungua programu yako ya uthibitishaji na uchanganue msimbo huu",
+        "manual_key": "Huwezi kuchanganua? Ingiza ufunguo huu kwa mkono:",
+        "enter_code": "Ingiza msimbo wa tarakimu 6",
+        "verify": "Thibitisha na Uwashe",
+        "invalid_code": "Ingiza msimbo halali wa tarakimu 6",
+        "verify_failed": "Uthibitishaji umeshindwa. Jaribu tena.",
+        "help": "Msaada kuhusu programu za uthibitishaji"
     }
 }
