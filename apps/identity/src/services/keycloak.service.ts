@@ -118,6 +118,31 @@ export class KeycloakService {
         // Best-effort; log but don't throw if delete fails
     }
 
+    /** Reset a Keycloak user's password via the Admin API. */
+    async resetUserPassword(keycloakId: string, newPassword: string): Promise<void> {
+        const token = await this.getAdminToken();
+        const res = await fetch(
+            `${this.adminBase}/users/${keycloakId}/reset-password`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    type: 'password',
+                    value: newPassword,
+                    temporary: false,
+                }),
+            },
+        );
+
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Keycloak resetUserPassword failed (${res.status}): ${text}`);
+        }
+    }
+
     // ── Token endpoint ─────────────────────────────────────────────────────
 
     /**

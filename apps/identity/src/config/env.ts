@@ -32,6 +32,17 @@ const envSchema = z.object({
     KEYCLOAK_ADMIN_CLIENT_ID: z.string().default('admin-cli'),
     KEYCLOAK_ADMIN_USERNAME: z.string().min(1),
     KEYCLOAK_ADMIN_PASSWORD: z.string().min(1),
+
+    /** Redis (for OTP storage) */
+    REDIS_URL: z
+        .string()
+        .default('redis://localhost:6379')
+        .describe('Redis connection string'),
+
+    /** Africa\'s Talking SMS */
+    AT_API_KEY: z.string().default('sandbox-key'),
+    AT_USERNAME: z.string().default('sandbox'),
+    AT_SENDER_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

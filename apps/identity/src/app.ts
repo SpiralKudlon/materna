@@ -7,7 +7,10 @@
  *  - JWT validation plugin   (Keycloak JWKS)
  *  - Gatekeeper plugin       (default-deny, public whitelist)
  *  - PostgreSQL pool         (via pg)
+ *  - Redis                   (via ioredis — OTP storage)
+ *  - Africa's Talking SMS    (or console stub in dev/test)
  *  - AuthService             (injected into routes)
+ *  - PasswordResetService    (injected into routes)
  *  - Auth routes             (under /api/v1/auth)
  */
 import Fastify from 'fastify';
@@ -16,21 +19,30 @@ import { Pool } from 'pg';
 import { env } from './config/env.js';
 import { KeycloakService } from './services/keycloak.service.js';
 import { AuthService } from './services/auth.service.js';
+import { OtpStore } from './services/otp.store.js';
+import { PasswordResetService } from './services/password-reset.service.js';
+import type { SmsGateway } from './services/sms.service.js';
+import { ConsoleSmsService } from './services/sms.service.js';
 import { authRoutes } from './routes/auth.routes.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import gatekeeperPlugin from './plugins/gatekeeper.plugin.js';
 
 // ── Public paths whitelist ────────────────────────────────────────────────
-// These routes are accessible without a JWT. All other routes require auth.
 const PUBLIC_PATHS = [
     '/health',
     '/api/v1/auth/register',
     '/api/v1/auth/login',
+    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/reset-password',
 ];
 
 export interface AppOptions {
     /** Override the PostgreSQL pool (useful for test isolation) */
     pool?: Pool;
+    /** Override the Redis instance (useful for test isolation) */
+    redis?: import('ioredis').default;
+    /** Override the SMS gateway (useful for test isolation) */
+    sms?: SmsGateway;
     /** Skip security plugins (useful in unit tests that mock Keycloak) */
     skipSecurity?: boolean;
 }
@@ -57,7 +69,6 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
                         return { statusCode: reply.statusCode };
                     },
                 },
-                // Always include request-id in structured logs
                 genReqId: () => crypto.randomUUID(),
             }
             : false,
@@ -106,7 +117,6 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
             connectionTimeoutMillis: 5_000,
         });
 
-    // Verify connection on startup (fail fast)
     if (!opts.pool) {
         const client = await pool.connect();
         client.release();
@@ -115,6 +125,37 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     app.addHook('onClose', async () => {
         await pool.end();
     });
+
+    // ── Redis ──────────────────────────────────────────────────────────────
+    let redis: import('ioredis').default;
+    if (opts.redis) {
+        redis = opts.redis;
+    } else {
+        const { default: Redis } = await import('ioredis');
+        redis = new Redis(env.REDIS_URL);
+    }
+
+    app.addHook('onClose', async () => {
+        await redis.quit();
+    });
+
+    // ── OTP store ──────────────────────────────────────────────────────────
+    const otpStore = new OtpStore(redis);
+
+    // ── SMS gateway ────────────────────────────────────────────────────────
+    let sms: SmsGateway;
+    if (opts.sms) {
+        sms = opts.sms;
+    } else if (env.NODE_ENV === 'production') {
+        const { AfricasTalkingSmsService } = await import('./services/sms.service.js');
+        sms = new AfricasTalkingSmsService(
+            env.AT_API_KEY,
+            env.AT_USERNAME,
+            env.AT_SENDER_ID,
+        );
+    } else {
+        sms = new ConsoleSmsService();
+    }
 
     // ── Keycloak service ───────────────────────────────────────────────────
     const keycloak = new KeycloakService(
@@ -127,8 +168,9 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
         env.KEYCLOAK_ADMIN_CLIENT_ID,
     );
 
-    // ── Auth service ───────────────────────────────────────────────────────
+    // ── Services ───────────────────────────────────────────────────────────
     const authService = new AuthService(pool, keycloak);
+    const passwordResetService = new PasswordResetService(pool, otpStore, sms, keycloak);
 
     // ── Health endpoint (public) ───────────────────────────────────────────
     app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -137,6 +179,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     await app.register(authRoutes, {
         prefix: '/api/v1/auth',
         authService,
+        passwordResetService,
     });
 
     return app;

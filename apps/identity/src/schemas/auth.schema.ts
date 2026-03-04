@@ -36,3 +36,32 @@ export const tokenResponseSchema = z.object({
 });
 
 export type TokenResponse = z.infer<typeof tokenResponseSchema>;
+
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+export const forgotPasswordSchema = z.object({
+    phone: z
+        .string()
+        .min(10, { message: 'Phone number must be at least 10 digits' })
+        .regex(/^\+?[0-9]+$/, { message: 'Phone number must contain only digits (optional + prefix)' }),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+// ─── Reset Password ──────────────────────────────────────────────────────────
+export const resetPasswordSchema = z.object({
+    phone: z
+        .string()
+        .min(10)
+        .regex(/^\+?[0-9]+$/),
+    otp: z
+        .string()
+        .length(6, { message: 'OTP must be exactly 6 digits' })
+        .regex(/^[0-9]+$/, { message: 'OTP must contain only digits' }),
+    new_password: z
+        .string()
+        .min(8, { message: 'Password must be at least 8 characters' })
+        .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+        .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
