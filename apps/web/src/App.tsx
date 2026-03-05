@@ -12,7 +12,7 @@ import { Button } from './components/ui/button';
 function ProtectedLayout() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  const { isOnline, syncing } = useSyncQueue();
+  const { isOnline, syncing, pendingCount } = useSyncQueue();
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'sw' : 'en';
@@ -33,6 +33,12 @@ function ProtectedLayout() {
               <span className="text-sm font-medium animate-pulse flex items-center gap-2 bg-primary-foreground/20 px-3 py-1 rounded-full">
                 <Globe className="h-4 w-4" />
                 {t('app.syncing')}
+              </span>
+            )}
+            {!syncing && pendingCount > 0 && (
+              <span className="text-sm font-medium flex items-center gap-2 bg-yellow-500/20 text-yellow-100 px-3 py-1 rounded-full">
+                <WifiOff className="h-4 w-4" />
+                {pendingCount} pending
               </span>
             )}
             {user && (
