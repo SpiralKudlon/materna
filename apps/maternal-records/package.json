@@ -3,17 +3,29 @@
     "version": "1.0.0",
     "description": "Maternal Records service — patients, medical history, ANC visits",
     "private": true,
+    "type": "module",
+    "main": "dist/server.js",
     "scripts": {
+        "build": "tsc",
+        "start": "node dist/server.js",
+        "dev": "tsx watch src/server.ts",
+        "test": "vitest run",
         "migrate:up": "node-pg-migrate up --migration-file-language sql",
         "migrate:down": "node-pg-migrate down --migration-file-language sql",
         "migrate:create": "node-pg-migrate create --migration-file-language sql"
     },
     "dependencies": {
+        "fastify": "^5.7.4",
+        "fastify-plugin": "^5.1.0",
         "node-pg-migrate": "^7.7.0",
-        "pg": "^8.19.0"
+        "pg": "^8.19.0",
+        "zod": "^3.22.4"
     },
     "devDependencies": {
+        "@types/node": "^20.11.24",
         "@types/pg": "^8.18.0",
-        "typescript": "^5.3.3"
+        "tsx": "^4.7.1",
+        "typescript": "^5.3.3",
+        "vitest": "^1.3.1"
     }
 }
