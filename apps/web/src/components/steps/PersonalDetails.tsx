@@ -37,6 +37,48 @@ export function PersonalDetails() {
                     </FormItem>
                 )}
             />
+
+            <FormField
+                control={control}
+                name="personalDetails.phone"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>{t('registration.fields.phone')}</FormLabel>
+                        <FormControl>
+                            <Input type="tel" placeholder="+254…" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={control}
+                name="personalDetails.email"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>{t('registration.fields.email')} (Optional)</FormLabel>
+                        <FormControl>
+                            <Input type="email" placeholder="jane@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={control}
+                name="personalDetails.nationalId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>National ID (Optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="ID number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
     );
 }

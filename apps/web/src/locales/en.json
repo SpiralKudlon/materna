@@ -8,7 +8,7 @@
         "title": "Patient Registration",
         "steps": {
             "personal": "Personal Details",
-            "contact": "Contact Info",
+            "pregnancy": "Pregnancy Info",
             "medical": "Medical History",
             "vitals": "Vitals",
             "consents": "Consents"
