@@ -1,0 +1,19 @@
+{
+    "name": "maternal-records",
+    "version": "1.0.0",
+    "description": "Maternal Records service — patients, medical history, ANC visits",
+    "private": true,
+    "scripts": {
+        "migrate:up": "node-pg-migrate up --migration-file-language sql",
+        "migrate:down": "node-pg-migrate down --migration-file-language sql",
+        "migrate:create": "node-pg-migrate create --migration-file-language sql"
+    },
+    "dependencies": {
+        "node-pg-migrate": "^7.7.0",
+        "pg": "^8.19.0"
+    },
+    "devDependencies": {
+        "@types/pg": "^8.18.0",
+        "typescript": "^5.3.3"
+    }
+}
