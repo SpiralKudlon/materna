@@ -3,6 +3,22 @@ import { connection } from '../queues/index.js';
 import AfricasTalking from 'africastalking';
 import { env } from '../config/env.js';
 
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin for FCM
+if (env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: env.FIREBASE_PROJECT_ID,
+            clientEmail: env.FIREBASE_CLIENT_EMAIL,
+            privateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+    });
+    console.log('Firebase Admin initialized');
+} else {
+    console.warn('Firebase Admin credentials missing. FCM pushes will be simulated.');
+}
+
 // Initialize Africa's Talking SDK for SMS
 const at = AfricasTalking({
     apiKey: env.AT_API_KEY,
@@ -60,9 +76,24 @@ async function processHighRiskAlert(data: HighRiskAlertData) {
         });
         console.log(`[NotificationWorker] SMS sent to patient ${data.patientPhone}`);
 
-        // 2. Trigger FCM Push to CHV (mocked for now, in a real system we'd use firebase-admin here)
+        // 2. Trigger FCM Push to CHV
         if (data.chvFcmToken) {
-            console.log(`[NotificationWorker] FCM Push sent to CHV token: ${data.chvFcmToken}`);
+            if (admin.apps.length > 0) {
+                await admin.messaging().send({
+                    token: data.chvFcmToken,
+                    notification: {
+                        title: 'High Risk Alert',
+                        body: `Patient ${data.patientId} flagged as HIGH risk. Contact them immediately.`,
+                    },
+                    data: {
+                        patientId: data.patientId,
+                        riskScore: String(data.riskScore),
+                    }
+                });
+                console.log(`[NotificationWorker] FCM Push sent to CHV token: ${data.chvFcmToken}`);
+            } else {
+                console.log(`[NotificationWorker] FCM Push simulated for CHV token: ${data.chvFcmToken} (admin not initialized)`);
+            }
         } else {
             console.log(`[NotificationWorker] CHV has no FCM token. Sent SMS fallback to ${data.chvPhone}`);
             await at.SMS.send({

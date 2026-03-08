@@ -4,6 +4,7 @@ import { getSmsSecrets } from './config/vault.js';
 import { AfricasTalkingProvider, TwilioProvider } from './services/sms.strategy.js';
 import { SmsBridgeService } from './services/sms-bridge.service.js';
 import { smsRoutes } from './routes/sms.routes.js';
+import { metricsRegistry } from './config/metrics.js';
 import pg from 'pg';
 
 
@@ -38,6 +39,12 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     app.get('/health', async () => {
         return { status: 'ok', service: 'sms-bridge' };
+    });
+
+    app.get('/metrics', async (request, reply) => {
+        const metrics = await metricsRegistry.metrics();
+        reply.header('Content-Type', metricsRegistry.contentType);
+        return metrics;
     });
 
 

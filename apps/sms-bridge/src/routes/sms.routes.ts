@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import type { Pool } from 'pg';
 import type { SmsBridgeService } from '../services/sms-bridge.service.js';
+import { smsDeliveryTotal } from '../config/metrics.js';
 
 export interface SmsRouteOptions {
     dbPool: Pool;
@@ -66,6 +67,7 @@ export const smsRoutes: FastifyPluginAsync<SmsRouteOptions> = async (app, opts) 
 
         let messageId: string | undefined;
         let finalStatus: string | undefined;
+        let providerName = 'unknown';
 
         // Detect AT webhook vs Twilio webhook
         const atParsed = atWebhookSchema.safeParse(body);
@@ -74,9 +76,11 @@ export const smsRoutes: FastifyPluginAsync<SmsRouteOptions> = async (app, opts) 
         if (atParsed.success) {
             messageId = atParsed.data.id;
             finalStatus = atParsed.data.status;
+            providerName = 'africastalking';
         } else if (twilioParsed.success) {
             messageId = twilioParsed.data.MessageSid;
             finalStatus = twilioParsed.data.MessageStatus;
+            providerName = 'twilio';
         } else {
             app.log.warn('Received unrecognized webhook payload');
             return reply.code(400).send({ error: 'Unrecognized payload' });
@@ -95,6 +99,7 @@ export const smsRoutes: FastifyPluginAsync<SmsRouteOptions> = async (app, opts) 
                     app.log.warn(`Webhook received for unknown message_id: ${messageId}`);
                 } else {
                     app.log.info(`Updated message ${messageId} to status ${finalStatus}`);
+                    smsDeliveryTotal.inc({ provider: providerName, status: finalStatus });
                 }
             } finally {
                 dbClient.release();
