@@ -13,6 +13,7 @@ import { visitRoutes } from './routes/visit.routes.js';
 import { medicationRoutes } from './routes/medication.routes.js';
 import { dashboardRoutes } from './routes/dashboard.routes.js';
 import { referralRoutes } from './routes/referral.routes.js';
+import { facilityRoutes } from './routes/facility.routes.js';
 
 export interface BuildAppOptions {
     pool: Pool;
@@ -67,6 +68,12 @@ export async function buildApp(opts: BuildAppOptions) {
     await app.register(referralRoutes, {
         prefix: '/api/v1/referrals',
         pool: opts.pool,
+    });
+
+    // ── Facilities: /api/v1/facilities ────────────────────────────────
+    await app.register(facilityRoutes, {
+        prefix: '/api/v1/facilities',
+        db: opts.pool,
     });
 
     // Global error handler
