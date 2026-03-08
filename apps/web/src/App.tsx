@@ -5,6 +5,8 @@ import { useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { MfaSetup } from './components/MfaSetup';
 import { RegistrationForm } from './components/RegistrationForm';
+import { NotificationCenter } from './components/NotificationCenter';
+import { SosButton } from './components/SosButton';
 import { useSyncQueue } from './hooks/useSyncQueue';
 import { WifiOff, Activity, Globe, LogOut } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -46,6 +48,7 @@ function ProtectedLayout() {
                 {user.name || user.email}
               </span>
             )}
+            <NotificationCenter />
             <Button variant="secondary" size="sm" onClick={toggleLanguage} className="font-semibold shadow-sm">
               {i18n.language === 'en' ? 'Swahili' : 'English'}
             </Button>
@@ -65,8 +68,12 @@ function ProtectedLayout() {
       )}
 
       {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
+      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center relative">
         <RegistrationForm />
+
+        <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40">
+          <SosButton patientId={(user as any)?.id || 'demo-patient-id'} />
+        </div>
       </main>
 
       {/* Footer */}
