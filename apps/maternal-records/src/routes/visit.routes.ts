@@ -16,7 +16,7 @@ export async function visitRoutes(app: FastifyInstance, opts: VisitRouteOptions)
     const visitRepo = opts.visitRepo;
     const patientRepo = opts.patientRepo;
 
-    function getUserContext(request: { headers: Record<string, string | undefined> }) {
+    function getUserContext(request: { headers: any }) {
         const tenantId = request.headers['x-tenant-id'] ?? '';
         const userId = request.headers['x-user-id'] ?? '';
         return { tenantId, userId };

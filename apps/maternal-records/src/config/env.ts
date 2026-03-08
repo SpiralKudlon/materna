@@ -5,6 +5,7 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(3001),
     HOST: z.string().default('0.0.0.0'),
     DATABASE_URL: z.string().url(),
+    KAFKA_BROKERS: z.string().optional().describe('Comma-separated list of Kafka brokers'),
 });
 
 export const env = envSchema.parse(process.env);

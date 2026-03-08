@@ -11,6 +11,8 @@ import { MedicationRepository } from './repositories/medication.repository.js';
 import { patientRoutes } from './routes/patient.routes.js';
 import { visitRoutes } from './routes/visit.routes.js';
 import { medicationRoutes } from './routes/medication.routes.js';
+import { dashboardRoutes } from './routes/dashboard.routes.js';
+import { referralRoutes } from './routes/referral.routes.js';
 
 export interface BuildAppOptions {
     pool: Pool;
@@ -55,8 +57,20 @@ export async function buildApp(opts: BuildAppOptions) {
         medicationRepo,
     });
 
+    // ── Dashboards: /api/v1 ───────────────────────────────────────────
+    await app.register(dashboardRoutes, {
+        prefix: '/api/v1',
+        pool: opts.pool,
+    });
+
+    // ── Referrals: /api/v1/referrals ──────────────────────────────────
+    await app.register(referralRoutes, {
+        prefix: '/api/v1/referrals',
+        pool: opts.pool,
+    });
+
     // Global error handler
-    app.setErrorHandler((error, _request, reply) => {
+    app.setErrorHandler((error: any, _request, reply) => {
         app.log.error(error);
         const statusCode = error.statusCode ?? 500;
         reply.code(statusCode).send({

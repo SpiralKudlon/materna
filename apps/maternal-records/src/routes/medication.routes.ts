@@ -13,7 +13,7 @@ export interface MedicationRouteOptions {
 export async function medicationRoutes(app: FastifyInstance, opts: MedicationRouteOptions) {
     const repo = opts.medicationRepo;
 
-    function getUserContext(request: { headers: Record<string, string | undefined> }) {
+    function getUserContext(request: { headers: any }) {
         const tenantId = request.headers['x-tenant-id'] ?? '';
         const userId = request.headers['x-user-id'] ?? '';
         return { tenantId, userId };

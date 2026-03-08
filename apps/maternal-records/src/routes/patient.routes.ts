@@ -14,7 +14,7 @@ export async function patientRoutes(app: FastifyInstance, opts: PatientRouteOpti
     const repo = opts.patientRepo;
 
     // ── Helpers ────────────────────────────────────────────────────────
-    function getUserContext(request: { headers: Record<string, string | undefined> }) {
+    function getUserContext(request: { headers: any }) {
         // In production these come from JWT claims (set by the gateway / jwt plugin)
         const tenantId = request.headers['x-tenant-id'] ?? '';
         const userId = request.headers['x-user-id'] ?? '';

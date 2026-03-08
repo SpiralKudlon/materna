@@ -4,12 +4,14 @@
 import pg from 'pg';
 import { buildApp } from './app.js';
 import { env } from './config/env.js';
+import { connectKafka, disconnectKafka } from './config/kafka.js';
 
 const pool = new pg.Pool({ connectionString: env.DATABASE_URL });
 
 const app = await buildApp({ pool });
 
 try {
+    await connectKafka();
     await app.listen({ port: env.PORT, host: env.HOST });
     console.log(`🏥 maternal-records listening on ${env.HOST}:${env.PORT}`);
 } catch (err) {
@@ -19,6 +21,7 @@ try {
 
 // Graceful shutdown
 const shutdown = async () => {
+    await disconnectKafka();
     await app.close();
     await pool.end();
     process.exit(0);
