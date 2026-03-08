@@ -13,8 +13,9 @@ declare const self: ServiceWorkerGlobalScope;
 
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { NetworkOnly } from 'workbox-strategies';
+import { NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { BroadcastUpdatePlugin } from 'workbox-broadcast-update';
 
 // ── 1. Precache static assets ──────────────────────────────────────────
 precacheAndRoute(self.__WB_MANIFEST);
@@ -61,7 +62,20 @@ registerRoute(
     'POST',
 );
 
-// ── 3. Online event listener → notify clients ──────────────────────────
+// ── 3. Stale-While-Revalidate for Dashboards and Patient Profiles ────────
+registerRoute(
+    ({ url }) => url.pathname.match(/^\/api\/v1\/(chv|facilities|patients)\/.+/),
+    new StaleWhileRevalidate({
+        cacheName: 'dashboard-api-cache',
+        plugins: [
+            new BroadcastUpdatePlugin({
+                headersToCheck: ['date', 'etag', 'content-length'],
+            })
+        ]
+    })
+);
+
+// ── 4. Online event listener → notify clients ──────────────────────────
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SKIP_WAITING') {
         self.skipWaiting();

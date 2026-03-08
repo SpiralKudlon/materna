@@ -15,6 +15,7 @@ import { useToast } from '../components/Toast';
 export function useSyncQueue() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncing, setSyncing] = useState(false);
+    const [isCacheValidating, setIsCacheValidating] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
     const syncLock = useRef(false);
     const { toast } = useToast();
@@ -174,9 +175,30 @@ export function useSyncQueue() {
         };
     }, [toast, refreshCount]);
 
+    // ── Workbox Broadcast Update Plugin Listener ────────────────────────
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            if (event.data?.meta === 'workbox-broadcast-update') {
+                const { cacheName } = event.data.payload;
+                if (cacheName === 'dashboard-api-cache') {
+                    setIsCacheValidating(true);
+
+                    // Show a quick spinning activity indicator for the revalidation success
+                    setTimeout(() => setIsCacheValidating(false), 2000);
+                }
+            }
+        };
+
+        navigator.serviceWorker?.addEventListener('message', handler);
+        return () => {
+            navigator.serviceWorker?.removeEventListener('message', handler);
+        };
+    }, []);
+
     return {
         isOnline,
         syncing,
+        isCacheValidating,
         pendingCount,
         submitAncVisit,
         syncPendingItems,

@@ -15,7 +15,7 @@ import { Button } from './components/ui/button';
 function ProtectedLayout() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  const { isOnline, syncing, pendingCount } = useSyncQueue();
+  const { isOnline, syncing, isCacheValidating, pendingCount } = useSyncQueue();
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'sw' : 'en';
@@ -38,7 +38,13 @@ function ProtectedLayout() {
                 {t('app.syncing')}
               </span>
             )}
-            {!syncing && pendingCount > 0 && (
+            {!syncing && isCacheValidating && (
+              <span className="text-sm font-medium animate-pulse flex items-center gap-2 bg-blue-500/20 text-blue-100 px-3 py-1 rounded-full">
+                <Activity className="h-4 w-4" />
+                Updating Cache...
+              </span>
+            )}
+            {!syncing && !isCacheValidating && pendingCount > 0 && (
               <span className="text-sm font-medium flex items-center gap-2 bg-yellow-500/20 text-yellow-100 px-3 py-1 rounded-full">
                 <WifiOff className="h-4 w-4" />
                 {pendingCount} pending
