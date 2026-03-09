@@ -40,12 +40,14 @@ export function decodeJwt(token: string): Record<string, unknown> {
 // ── Error class ────────────────────────────────────────────────────────────
 
 export class ApiError extends Error {
-    constructor(
-        public readonly status: number,
-        public readonly body: unknown,
-    ) {
+    public readonly status: number;
+    public readonly body: unknown;
+
+    constructor(status: number, body: unknown) {
         super(`API ${status}`);
         this.name = 'ApiError';
+        this.status = status;
+        this.body = body;
     }
 }
 
@@ -80,7 +82,7 @@ export async function api<T = unknown>(
 
 // ── Auth-specific API calls ────────────────────────────────────────────────
 
-export interface LoginResponse {
+export type LoginResponse = {
     data: {
         access_token: string;
         refresh_token: string;
@@ -88,7 +90,7 @@ export interface LoginResponse {
         expires_in: number;
         refresh_expires_in: number;
     };
-}
+};
 
 export async function loginApi(
     email: string,

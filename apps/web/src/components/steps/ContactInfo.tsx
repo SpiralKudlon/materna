@@ -12,7 +12,7 @@ export function ContactInfo() {
         <div className="space-y-4">
             <FormField
                 control={control}
-                name="contactInfo.phone"
+                name="personalDetails.phone"
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>{t('registration.fields.phone')}</FormLabel>
@@ -26,7 +26,7 @@ export function ContactInfo() {
 
             <FormField
                 control={control}
-                name="contactInfo.email"
+                name="personalDetails.email"
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>{t('registration.fields.email')} (Optional)</FormLabel>

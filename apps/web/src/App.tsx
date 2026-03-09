@@ -8,6 +8,7 @@ import { RegistrationForm } from './components/RegistrationForm';
 import { NotificationCenter } from './components/NotificationCenter';
 import { SosButton } from './components/SosButton';
 import { CHVCaseload } from './components/CHVCaseload';
+import { SmsSimulator } from './components/SmsSimulator';
 import { useSyncQueue } from './hooks/useSyncQueue';
 import { WifiOff, Activity, Globe, LogOut } from 'lucide-react';
 import { Button } from './components/ui/button';
@@ -86,6 +87,10 @@ function ProtectedLayout() {
             <p className="text-muted-foreground mt-1 text-sm">Manage pending referrals and monitor high-risk patients efficiently.</p>
           </div>
           <CHVCaseload />
+        </section>
+
+        <section className="w-full max-w-4xl pt-8 border-t">
+          <SmsSimulator />
         </section>
 
         <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40">

@@ -1,4 +1,5 @@
 import fastify, { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
 import { env } from './config/env.js';
 import { getSmsSecrets } from './config/vault.js';
@@ -18,6 +19,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         },
     });
 
+    await app.register(cors, { origin: ['http://localhost:5173'] });
     await app.register(formbody);
 
     // We fetch secrets early to fail fast on startup if missing.

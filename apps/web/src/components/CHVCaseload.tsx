@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { useToast } from './ui/use-toast';
+import { useState, useMemo } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { useToast } from '../hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Search, Filter, CheckCircle } from 'lucide-react';
 

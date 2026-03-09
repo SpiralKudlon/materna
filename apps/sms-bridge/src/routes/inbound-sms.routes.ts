@@ -14,6 +14,11 @@ const inboundSmsSchema = z.object({
     id: z.string(),
 });
 
+const simulateSchema = z.object({
+    text: z.string(),
+    phone: z.string(),
+});
+
 export const inboundSmsRoutes: FastifyPluginAsync = async (app) => {
     app.post('/api/v1/sms/inbound', async (request, reply) => {
         const payload = inboundSmsSchema.parse(request.body);
@@ -43,5 +48,30 @@ export const inboundSmsRoutes: FastifyPluginAsync = async (app) => {
         console.log(`[OUTBOUND SMS] To: ${payload.from} | Msg: ${responseMsg}`);
 
         return reply.code(200).send({ success: true, message: 'Inbound processed' });
+    });
+
+    app.post('/api/v1/sms/simulate', async (request, reply) => {
+        const payload = simulateSchema.parse(request.body);
+
+        // Parse the simulated string
+        const command = SmsParserService.parseIncomingSms(payload.text);
+
+        let responseMsg = '';
+
+        if (command.type === 'STATUS') {
+            responseMsg = 'Your current Pregnancy Risk Status is LOW. Keep taking your supplements.';
+        } else if (command.type === 'LOG_SYMPTOM') {
+            responseMsg = `Alert received: Logged symptom ${command.symptom} (${command.severity || 'UNKNOWN'}). A CHV will review shortly.`;
+        } else {
+            responseMsg = `Command unknown. Reply with "STATUS" or "LOG <symptom> <severity>".`;
+        }
+
+        // Return immediately without dispatching any side-effects
+        return reply.code(200).send({
+            success: true,
+            simulatedPhone: payload.phone,
+            parsedCommand: command,
+            simulatedReply: responseMsg
+        });
     });
 };
