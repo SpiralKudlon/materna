@@ -1,0 +1,14 @@
+groups:
+  - name: sms_bridge_alerts
+    rules:
+      - alert: SmsDeliverySuccessRateDrop
+        expr: >
+          sum(rate(sms_bridge_sms_delivery_total{status="Success", channel="SMS"}[10m]))
+          /
+          sum(rate(sms_bridge_sms_delivery_total{channel="SMS"}[10m])) < 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SMS Delivery Success Rate Drop ({{ $labels.provider }})"
+          description: "The SMS delivery success rate has dropped below 90% over the last 10 minutes. Current rate: {{ $value | humanizePercentage }}."

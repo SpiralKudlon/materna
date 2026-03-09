@@ -99,7 +99,7 @@ export const smsRoutes: FastifyPluginAsync<SmsRouteOptions> = async (app, opts) 
                     app.log.warn(`Webhook received for unknown message_id: ${messageId}`);
                 } else {
                     app.log.info(`Updated message ${messageId} to status ${finalStatus}`);
-                    smsDeliveryTotal.inc({ provider: providerName, status: finalStatus });
+                    smsDeliveryTotal.inc({ provider: providerName, status: finalStatus, channel: 'SMS' });
                 }
             } finally {
                 dbClient.release();

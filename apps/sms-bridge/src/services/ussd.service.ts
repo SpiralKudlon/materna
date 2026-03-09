@@ -1,4 +1,5 @@
 import { getRedisClient } from '../config/redis.js';
+import { ussdSessionCompletionsTotal, ussdSessionDurationSeconds } from '../config/metrics.js';
 
 type USSDState = 'MENU_MAIN' | 'MENU_LOG_SYMPTOM' | 'MENU_LOG_SEVERITY' | 'FINISHED';
 
@@ -71,14 +72,17 @@ export class UssdService {
                     newState = 'FINISHED';
                     // Implicitly you'd fetch real Risk DB tier here
                     responseText = `END Your latest Risk Tier is LOW. Stay safe!`;
+                    ussdSessionCompletionsTotal.inc({ status: 'success' });
                     break;
                 case '3':
                     newState = 'FINISHED';
                     responseText = `END Your next ANC Visit is on 2026-04-15.`;
+                    ussdSessionCompletionsTotal.inc({ status: 'success' });
                     break;
                 case '4':
                     newState = 'FINISHED';
                     responseText = `END SOS Emergency Alert Fired! A CHV is being dispatched.`;
+                    ussdSessionCompletionsTotal.inc({ status: 'success' });
                     break;
                 default:
                     responseText = `CON Invalid Choice.
@@ -119,6 +123,12 @@ export class UssdService {
                 newState = 'FINISHED';
                 // Fire off implicit database insert here
                 responseText = `END Thank you. Logged ${session.symptom} (${mapped}).`;
+
+                ussdSessionCompletionsTotal.inc({ status: 'success' });
+
+                // Track exact workflow latency exclusively for Symptom Logs
+                const durationSeconds = (Date.now() - session.lastUpdated) / 1000;
+                ussdSessionDurationSeconds.observe(durationSeconds);
             } else {
                 responseText = `CON Invalid Choice. Severity?
 1. Mild
