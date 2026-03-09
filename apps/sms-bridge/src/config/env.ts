@@ -15,6 +15,9 @@ const envSchema = z.object({
     VAULT_ADDR: z.string().url().default('http://127.0.0.1:8200'),
     VAULT_TOKEN: z.string().min(1, 'Vault token is required for sms-bridge'),
     VAULT_SECRET_PATH: z.string().default('secret/data/maternal-system/sms'),
+
+    /** Redis Config */
+    REDIS_URL: z.string().url().default('redis://localhost:6379'),
 });
 
 export type Env = z.infer<typeof envSchema>;
