@@ -4,6 +4,11 @@ import AfricasTalking from 'africastalking';
 import { env } from '../config/env.js';
 
 import * as admin from 'firebase-admin';
+import pg from 'pg';
+import { TemplateService } from '../services/template.service.js';
+
+const dbPool = new pg.Pool({ connectionString: env.DATABASE_URL });
+const templateService = new TemplateService(dbPool);
 
 // Initialize Firebase Admin for FCM
 if (env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY) {
@@ -34,6 +39,8 @@ export interface HighRiskAlertData {
     riskScore: number;
     riskTier: 'HIGH';
     contributingFactors: any[];
+    preferredLanguage?: string;
+    patientName?: string;
 }
 
 export interface AncReminderData {
@@ -41,6 +48,8 @@ export interface AncReminderData {
     patientPhone: string;
     visitDate: string;
     reminderType: 'T-72H' | 'T-24H';
+    preferredLanguage?: string;
+    patientName?: string;
 }
 
 export const notificationWorker = new Worker(
@@ -57,7 +66,7 @@ export const notificationWorker = new Worker(
         }
     },
     {
-        connection,
+        connection: connection as any,
         // Process up to 10 notifications concurrently
         concurrency: 10,
     }
@@ -65,7 +74,13 @@ export const notificationWorker = new Worker(
 
 async function processHighRiskAlert(data: HighRiskAlertData) {
     console.log(`🚨 Generating HIGH RISK alert for patient ${data.patientId}`);
-    const message = `URGENT: Your recent assessment flagged a HIGH risk (Score: ${data.riskScore}). Please visit the clinic immediately or contact your CHV.`;
+
+    // Render dynamic text prioritizing actual patient language configs
+    const language = data.preferredLanguage || 'en';
+    const message = await templateService.render('HIGH_RISK_ALERT', language, {
+        patientName: data.patientName || 'Patient',
+        riskScore: data.riskScore
+    });
 
     try {
         // 1. Send SMS to Patient
@@ -112,9 +127,12 @@ async function processHighRiskAlert(data: HighRiskAlertData) {
 
 async function processAncReminder(data: AncReminderData) {
     console.log(`📅 Generating ANC Reminder (${data.reminderType}) for patient ${data.patientId}`);
-    const msg = data.reminderType === 'T-72H'
-        ? `Reminder: You have an upcoming ANC visit in 3 days on ${data.visitDate}.`
-        : `Reminder: Your ANC visit is tomorrow, ${data.visitDate}. Please remember to attend.`;
+
+    const language = data.preferredLanguage || 'en';
+    const msg = await templateService.render('ANC_REMINDER', language, {
+        patientName: data.patientName || 'Patient',
+        date: data.visitDate
+    });
 
     try {
         await at.SMS.send({

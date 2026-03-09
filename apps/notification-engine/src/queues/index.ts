@@ -1,15 +1,16 @@
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { env } from '../config/env.js';
 
 // Shared Redis connection for BullMQ
+// @ts-ignore - BullMQ typing interface explicitly mismatches ESM generic Redis
 export const connection = new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: null,
 });
 
 // Queue for standard priority alerts and scheduled reminders
 export const notificationsQueue = new Queue('notifications', {
-    connection,
+    connection: connection as any,
     defaultJobOptions: {
         attempts: 3,
         backoff: {
@@ -23,7 +24,7 @@ export const notificationsQueue = new Queue('notifications', {
 
 // Queue for high-priority emergency SOS calls (bypasses normal traffic)
 export const emergencySosQueue = new Queue('emergency_sos', {
-    connection,
+    connection: connection as any,
     defaultJobOptions: {
         attempts: 2,
         backoff: {

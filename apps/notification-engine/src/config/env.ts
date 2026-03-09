@@ -8,6 +8,9 @@ const envSchema = z.object({
     // Redis for BullMQ
     REDIS_URL: z.string().default('redis://localhost:6379'),
 
+    // Postgres Template DB
+    DATABASE_URL: z.string().url().describe('Postgres connection string: postgres://user:pass@host:5432/dbname'),
+
     // AT configurations
     AT_API_KEY: z.string().min(1, "Africa's Talking API key required"),
     AT_USERNAME: z.string().min(1, "Africa's Talking Username required"),

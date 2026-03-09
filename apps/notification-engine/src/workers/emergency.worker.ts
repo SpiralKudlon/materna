@@ -51,7 +51,7 @@ export const emergencySosWorker = new Worker(
         }
     },
     {
-        connection,
+        connection: connection as any,
         // Maximum concurrency to ensure we process these immediately without head-of-line blocking
         concurrency: 50,
         // Aggressive loop to pick up jobs faster for the SLA

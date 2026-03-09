@@ -41,6 +41,20 @@ vi.mock('firebase-admin', () => {
     };
 });
 
+// Mock TemplateService to bypass database connection
+vi.mock('../../src/services/template.service.js', () => {
+    return {
+        TemplateService: vi.fn().mockImplementation(() => ({
+            render: vi.fn().mockImplementation(async (name, lang, vars) => {
+                if (name === 'HIGH_RISK_ALERT') {
+                    return `URGENT: Patient ${vars.patientName} flagged HIGH risk (Score: ${vars.riskScore})`;
+                }
+                return 'Mocked template string';
+            })
+        }))
+    };
+});
+
 import fastify, { FastifyInstance } from 'fastify';
 import { notifyRoutes } from '../../src/routes/notify.routes.js';
 // We do NOT mock bullmq in e2e so that the queue actually processes the job in memory,
