@@ -7,18 +7,49 @@ export interface ParsedSmsCommand {
     raw: string;
 }
 
-const VALID_SYMPTOMS = [
-    'BLEEDING',
-    'FEVER',
-    'HEADACHE',
-    'SWELLING',
-    'VISION',
-    'CONTRACTIONS',
-    'FATIGUE',
-    'NAUSEA',
-    'VOMITING',
-    'DIZZINESS'
-];
+/**
+ * Canonical map: all recognised keyword strings (English + Swahili) that
+ * map to a single standard clinical label.
+ *
+ * English term → Swahili equivalent used in Kenya pilot:
+ *   BLEEDING      → KUTOKA_DAMU (literally: bleeding/discharge)
+ *   FEVER         → HOMA
+ *   HEADACHE      → KICHWA (kichwa = head pain)
+ *   SWELLING      → UVIMBE
+ *   VISION        → MAONO (blurred vision)
+ *   CONTRACTIONS  → MIKAZO
+ *   FATIGUE       → UCHOVU
+ *   NAUSEA        → KICHEFUCHEFU
+ *   VOMITING      → KUTAPIKA
+ *   DIZZINESS     → KIZUNGUZUNGU
+ */
+export const SYMPTOM_CANONICAL: Record<string, string> = {
+    // English
+    BLEEDING: 'BLEEDING',
+    FEVER: 'FEVER',
+    HEADACHE: 'HEADACHE',
+    SWELLING: 'SWELLING',
+    VISION: 'VISION',
+    CONTRACTIONS: 'CONTRACTIONS',
+    FATIGUE: 'FATIGUE',
+    NAUSEA: 'NAUSEA',
+    VOMITING: 'VOMITING',
+    DIZZINESS: 'DIZZINESS',
+    // Swahili
+    KUTOKA_DAMU: 'BLEEDING',
+    HOMA: 'FEVER',
+    KICHWA: 'HEADACHE',
+    UVIMBE: 'SWELLING',
+    MAONO: 'VISION',
+    MIKAZO: 'CONTRACTIONS',
+    UCHOVU: 'FATIGUE',
+    KICHEFUCHEFU: 'NAUSEA',
+    KUTAPIKA: 'VOMITING',
+    KIZUNGUZUNGU: 'DIZZINESS',
+};
+
+// All valid input keywords (English + Swahili) the fuzzy matcher operates on
+const VALID_SYMPTOMS = Object.keys(SYMPTOM_CANONICAL);
 
 export class SmsParserService {
     /**
@@ -60,7 +91,8 @@ export class SmsParserService {
 
                 return {
                     type: 'LOG_SYMPTOM',
-                    symptom: matchedSymptom,
+                    // Normalize matched keyword (may be Swahili) to canonical English label
+                    symptom: SYMPTOM_CANONICAL[matchedSymptom] ?? matchedSymptom,
                     severity: rawSeverityInput,
                     raw: text
                 };

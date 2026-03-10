@@ -7,6 +7,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Pool, PoolClient, QueryResult } from 'pg';
 import { PatientRepository, type PatientRow } from '../../src/repositories/patient.repository.js';
+import { KmsService } from '../../src/services/kms.service.js';
+import { CryptoService } from '../../src/services/crypto.service.js';
+
+vi.mock('../../src/services/kms.service.js', () => ({
+    KmsService: {
+        generateDataKey: vi.fn().mockResolvedValue({ plaintextDek: Buffer.alloc(32, 1), kmsKeyId: 'mock-kms-123' }),
+        decryptDataKey: vi.fn().mockResolvedValue(Buffer.alloc(32, 1))
+    }
+}));
+
+vi.mock('../../src/services/crypto.service.js', () => ({
+    CryptoService: {
+        encryptField: vi.fn((text) => Buffer.from(`ENC:${text}`)),
+        decryptField: vi.fn((buf) => {
+            const str = buf.toString();
+            return str.startsWith('ENC:') ? str.substring(4) : str;
+        })
+    }
+}));
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -19,9 +38,10 @@ function makePatientRow(overrides: Partial<PatientRow> = {}): PatientRow {
     return {
         id: PATIENT,
         tenant_id: TENANT,
-        full_name_enc: Buffer.from('Jane Doe'),
-        phone_enc: Buffer.from('+254700000000'),
-        date_of_birth: '1990-01-01',
+        kms_key_id: 'mock-kms-123',
+        full_name_enc: Buffer.from('ENC:Jane Doe'),
+        phone_enc: Buffer.from('ENC:+254700000000'),
+        date_of_birth: Buffer.from('ENC:1990-01-01'),
         sex: 'F',
         national_id: null,
         registered_by: USER,
@@ -134,14 +154,14 @@ describe('PatientRepository', () => {
                 sex: 'F',
                 national_id: 'NID123',
             });
-            // The INSERT call should have 7 bind params
+            // The INSERT call should have 8 bind params
             const insertCall = client.query.mock.calls.find(
                 (c: unknown[]) => (c[0] as string).includes('INSERT INTO patients'),
             );
-            expect(insertCall![1]).toHaveLength(7);
-            expect(insertCall![1][3]).toBe('1990-01-01');
-            expect(insertCall![1][4]).toBe('F');
-            expect(insertCall![1][5]).toBe('NID123');
+            expect(insertCall![1]).toHaveLength(8);
+            expect(insertCall![1][4].toString()).toBe('ENC:1990-01-01');
+            expect(insertCall![1][5]).toBe('F');
+            expect(insertCall![1][6]).toBe('NID123');
         });
     });
 
@@ -212,7 +232,8 @@ describe('PatientRepository', () => {
         it('updates specified fields only', async () => {
             resolveQueryByPattern(client, {
                 'SELECT 1': { rows: [{ '?column?': 1 }], rowCount: 1 } as QueryResult,
-                'UPDATE patients': { rows: [makePatientRow({ full_name_enc: Buffer.from('Jane Smith') })], rowCount: 1 } as QueryResult,
+                'SELECT kms_key_id': { rows: [{ kms_key_id: 'mock-kms-123' }], rowCount: 1 } as QueryResult,
+                'UPDATE patients': { rows: [makePatientRow({ full_name_enc: Buffer.from('ENC:Jane Smith') })], rowCount: 1 } as QueryResult,
             });
             const dto = await repo.update(TENANT, USER, PATIENT, { full_name: 'Jane Smith' });
             expect(dto.full_name).toBe('Jane Smith');
@@ -221,6 +242,7 @@ describe('PatientRepository', () => {
         it('throws when no fields provided', async () => {
             resolveQueryByPattern(client, {
                 'SELECT 1': { rows: [{ '?column?': 1 }], rowCount: 1 } as QueryResult,
+                'SELECT kms_key_id': { rows: [{ kms_key_id: 'mock-kms-123' }], rowCount: 1 } as QueryResult,
             });
             await expect(repo.update(TENANT, USER, PATIENT, {})).rejects.toThrow('No fields to update');
         });
@@ -228,6 +250,7 @@ describe('PatientRepository', () => {
         it('builds dynamic SET with multiple fields', async () => {
             resolveQueryByPattern(client, {
                 'SELECT 1': { rows: [{ '?column?': 1 }], rowCount: 1 } as QueryResult,
+                'SELECT kms_key_id': { rows: [{ kms_key_id: 'mock-kms-123' }], rowCount: 1 } as QueryResult,
                 'UPDATE patients': { rows: [makePatientRow()], rowCount: 1 } as QueryResult,
             });
             await repo.update(TENANT, USER, PATIENT, { full_name: 'A', phone: 'B', sex: 'M' });
@@ -283,8 +306,8 @@ describe('PatientRepository', () => {
             const plainName = 'Akinyi Wambui';
             const plainPhone = '+254712345678';
             const row = makePatientRow({
-                full_name_enc: Buffer.from(plainName),
-                phone_enc: Buffer.from(plainPhone),
+                full_name_enc: Buffer.from(`ENC:${plainName}`),
+                phone_enc: Buffer.from(`ENC:${plainPhone}`),
             });
             resolveQueryByPattern(client, {
                 'INSERT INTO patients': { rows: [row], rowCount: 1 } as QueryResult,
@@ -303,9 +326,9 @@ describe('PatientRepository', () => {
             const insertCall = client.query.mock.calls.find(
                 (c: unknown[]) => (c[0] as string).includes('INSERT INTO patients'),
             );
-            // Params[1] = full_name_enc, Params[2] = phone_enc should be Buffers
-            expect(Buffer.isBuffer(insertCall![1][1])).toBe(true);
+            // Params[2] = full_name_enc, Params[3] = phone_enc should be Buffers (idx 0 is Tenant, 1 is KMS ID)
             expect(Buffer.isBuffer(insertCall![1][2])).toBe(true);
+            expect(Buffer.isBuffer(insertCall![1][3])).toBe(true);
         });
     });
 });

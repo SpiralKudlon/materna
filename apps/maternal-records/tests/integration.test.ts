@@ -11,6 +11,23 @@ import type { FastifyInstance } from 'fastify';
 vi.stubEnv('NODE_ENV', 'test');
 vi.stubEnv('DATABASE_URL', 'postgres://test:test@localhost:5432/test');
 
+vi.mock('../src/services/kms.service.js', () => ({
+    KmsService: {
+        generateDataKey: vi.fn().mockResolvedValue({ plaintextDek: Buffer.alloc(32, 1), kmsKeyId: 'mock-kms-123' }),
+        decryptDataKey: vi.fn().mockResolvedValue(Buffer.alloc(32, 1))
+    }
+}));
+
+vi.mock('../src/services/crypto.service.js', () => ({
+    CryptoService: {
+        encryptField: vi.fn((text) => Buffer.from(`ENC:${text}`)),
+        decryptField: vi.fn((buf) => {
+            const str = buf.toString();
+            return str.startsWith('ENC:') ? str.substring(4) : str;
+        })
+    }
+}));
+
 // ── Mock data ──────────────────────────────────────────────────────────
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 const USER_ID = '00000000-0000-0000-0000-000000000002';
@@ -19,9 +36,10 @@ const PATIENT_ID = '00000000-0000-0000-0000-000000000003';
 const patientRow = {
     id: PATIENT_ID,
     tenant_id: TENANT_ID,
-    full_name_enc: Buffer.from('Jane Doe', 'utf-8'),
-    phone_enc: Buffer.from('+254712345678', 'utf-8'),
-    date_of_birth: '1990-05-15',
+    kms_key_id: 'mock-kms-123',
+    full_name_enc: Buffer.from('ENC:Jane Doe', 'utf-8'),
+    phone_enc: Buffer.from('ENC:+254712345678', 'utf-8'),
+    date_of_birth: Buffer.from('ENC:1990-05-15', 'utf-8'),
     sex: 'F',
     national_id: null,
     registered_by: USER_ID,

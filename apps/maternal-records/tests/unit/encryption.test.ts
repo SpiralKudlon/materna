@@ -14,6 +14,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Pool, QueryResult } from 'pg';
 import { PatientRepository, type PatientRow } from '../../src/repositories/patient.repository.js';
+import { KmsService } from '../../src/services/kms.service.js';
+import { CryptoService } from '../../src/services/crypto.service.js';
+
+vi.mock('../../src/services/kms.service.js', () => ({
+    KmsService: {
+        generateDataKey: vi.fn().mockResolvedValue({ plaintextDek: Buffer.alloc(32, 1), kmsKeyId: 'mock-kms-123' }),
+        decryptDataKey: vi.fn().mockResolvedValue(Buffer.alloc(32, 1))
+    }
+}));
+
+vi.mock('../../src/services/crypto.service.js', () => ({
+    CryptoService: {
+        encryptField: vi.fn((text: string) => Buffer.from(`ENC:${text}`)),
+        decryptField: vi.fn((buf: Buffer) => {
+            const str = buf.toString();
+            return str.startsWith('ENC:') ? str.substring(4) : str;
+        })
+    }
+}));
+
 
 const TENANT = 't-001';
 const USER = 'u-001';
@@ -43,8 +63,9 @@ describe('Encryption / Decryption Verification', () => {
             const row: PatientRow = {
                 id: 'p-enc-test',
                 tenant_id: TENANT,
-                full_name_enc: Buffer.from('Akinyi Wambui'),
-                phone_enc: Buffer.from('+254712345678'),
+                kms_key_id: 'mock-kms-123',
+                full_name_enc: Buffer.from('ENC:Akinyi Wambui'),
+                phone_enc: Buffer.from('ENC:+254712345678'),
                 date_of_birth: null,
                 sex: null,
                 national_id: null,
@@ -57,21 +78,20 @@ describe('Encryption / Decryption Verification', () => {
 
         await repo.create(TENANT, USER, { full_name: 'Akinyi Wambui', phone: '+254712345678' });
 
-        // Find the INSERT call params (the one with 7 elements)
-        const insertParams = capturedParams.find(p => p.length === 7);
+        // Find the INSERT call params (the one with 8 elements)
+        const insertParams = capturedParams.find(p => p.length === 8);
         expect(insertParams).toBeDefined();
 
-        // Param[1] = full_name_enc (Buffer), Param[2] = phone_enc (Buffer)
-        const fullNameParam = insertParams![1];
-        const phoneParam = insertParams![2];
+        // Param[2] = full_name_enc (Buffer), Param[3] = phone_enc (Buffer)
+        const fullNameParam = insertParams![2];
+        const phoneParam = insertParams![3];
 
         // ASSERTION: Values sent to DB are Buffers, NOT plain strings
         expect(Buffer.isBuffer(fullNameParam)).toBe(true);
         expect(Buffer.isBuffer(phoneParam)).toBe(true);
 
-        // ASSERTION: The Buffer content matches the original plaintext
-        // (placeholder encryption is identity, but in production it would be AES-256-GCM)
-        expect((fullNameParam as Buffer).toString('utf-8')).toBe('Akinyi Wambui');
+        // ASSERTION: The Buffer content matches the encoded payload
+        expect((fullNameParam as Buffer).toString('utf-8')).toBe('ENC:Akinyi Wambui');
     });
 
     it('decrypt() converts Buffer (BYTEA) back to plain string for DTO', async () => {
@@ -81,9 +101,10 @@ describe('Encryption / Decryption Verification', () => {
         const dbRow: PatientRow = {
             id: 'p-dec-test',
             tenant_id: TENANT,
-            full_name_enc: Buffer.from('Wanjiku Kamau'),
-            phone_enc: Buffer.from('+254700111222'),
-            date_of_birth: '1988-06-15',
+            kms_key_id: 'mock-kms-123',
+            full_name_enc: Buffer.from('ENC:Wanjiku Kamau'),
+            phone_enc: Buffer.from('ENC:+254700111222'),
+            date_of_birth: Buffer.from('ENC:1988-06-15'),
             sex: 'F',
             national_id: null,
             registered_by: USER,
@@ -147,10 +168,11 @@ describe('Encryption / Decryption Verification', () => {
             if (['BEGIN', 'COMMIT', 'ROLLBACK'].includes(s)) return Promise.resolve({ rows: [] });
             if (s.startsWith('SET LOCAL')) return Promise.resolve({ rows: [] });
             if (s.includes('SELECT 1')) return Promise.resolve({ rows: [{ '?column?': 1 }], rowCount: 1 });
+            if (s.includes('SELECT kms_key_id')) return Promise.resolve({ rows: [{ kms_key_id: 'mock-kms-123' }], rowCount: 1 });
             if (params) capturedParams.push(params);
             const row: PatientRow = {
-                id: 'p-upd', tenant_id: TENANT, full_name_enc: Buffer.from('NewName'),
-                phone_enc: Buffer.from('+254'), date_of_birth: null, sex: null,
+                id: 'p-upd', tenant_id: TENANT, kms_key_id: 'mock-kms-123', full_name_enc: Buffer.from('ENC:NewName'),
+                phone_enc: Buffer.from('ENC:+254'), date_of_birth: null, sex: null,
                 national_id: null, registered_by: USER, created_at: NOW, updated_at: NOW,
             };
             return Promise.resolve({ rows: [row], rowCount: 1 } as QueryResult);

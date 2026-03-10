@@ -6,13 +6,16 @@
  * checks that the requesting user is assigned to the patient.
  */
 import type { Pool, PoolClient } from 'pg';
+import { CryptoService } from '../services/crypto.service.js';
+import { KmsService } from '../services/kms.service.js';
 
 export interface PatientRow {
     id: string;
     tenant_id: string;
+    kms_key_id: string;
     full_name_enc: Buffer;
     phone_enc: Buffer;
-    date_of_birth: string | null;
+    date_of_birth: Buffer | null;
     sex: string | null;
     national_id: string | null;
     registered_by: string | null;
@@ -34,26 +37,17 @@ export interface PatientDTO {
 }
 
 // ── Encryption helpers (AES-256-GCM) ──────────────────────────────────
-// In production, these would use a real key from env / secrets manager.
-// For now, we store plaintext wrapped as Buffer to match the BYTEA column.
+// Now using KMS Data Encryption Keys (DEK) and CryptoService.
 
-function encrypt(plaintext: string): Buffer {
-    // Placeholder — in production use crypto.createCipheriv('aes-256-gcm', key, iv)
-    return Buffer.from(plaintext, 'utf-8');
-}
+async function rowToDto(row: PatientRow): Promise<PatientDTO> {
+    const dek = await KmsService.decryptDataKey(row.kms_key_id);
 
-function decrypt(ciphertext: Buffer): string {
-    // Placeholder — in production use crypto.createDecipheriv('aes-256-gcm', key, iv)
-    return ciphertext.toString('utf-8');
-}
-
-function rowToDto(row: PatientRow): PatientDTO {
     return {
         id: row.id,
         tenant_id: row.tenant_id,
-        full_name: decrypt(row.full_name_enc),
-        phone: decrypt(row.phone_enc),
-        date_of_birth: row.date_of_birth,
+        full_name: CryptoService.decryptField(row.full_name_enc, dek),
+        phone: CryptoService.decryptField(row.phone_enc, dek),
+        date_of_birth: row.date_of_birth ? CryptoService.decryptField(row.date_of_birth, dek) : null,
         sex: row.sex,
         national_id: row.national_id,
         registered_by: row.registered_by,
@@ -103,22 +97,25 @@ export class PatientRepository {
             await client.query('BEGIN');
             await this.setTenant(client, tenantId);
 
+            const { plaintextDek, kmsKeyId } = await KmsService.generateDataKey();
+
             const { rows } = await client.query<PatientRow>(
-                `INSERT INTO patients (tenant_id, full_name_enc, phone_enc, date_of_birth, sex, national_id, registered_by)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                `INSERT INTO patients (tenant_id, kms_key_id, full_name_enc, phone_enc, date_of_birth, sex, national_id, registered_by)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                  RETURNING *`,
                 [
                     tenantId,
-                    encrypt(data.full_name),
-                    encrypt(data.phone),
-                    data.date_of_birth ?? null,
+                    kmsKeyId,
+                    CryptoService.encryptField(data.full_name, plaintextDek),
+                    CryptoService.encryptField(data.phone, plaintextDek),
+                    data.date_of_birth ? CryptoService.encryptField(data.date_of_birth, plaintextDek) : null,
                     data.sex ?? null,
                     data.national_id ?? null,
                     userId,
                 ],
             );
             await client.query('COMMIT');
-            return rowToDto(rows[0]);
+            return await rowToDto(rows[0]);
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
@@ -138,7 +135,7 @@ export class PatientRepository {
                 `SELECT * FROM patients WHERE id = $1`, [patientId],
             );
             await client.query('COMMIT');
-            return rows.length > 0 ? rowToDto(rows[0]) : null;
+            return rows.length > 0 ? await rowToDto(rows[0]) : null;
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
@@ -158,7 +155,7 @@ export class PatientRepository {
                 [limit, offset],
             );
             await client.query('COMMIT');
-            return rows.map(rowToDto);
+            return Promise.all(rows.map(rowToDto));
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
@@ -179,13 +176,20 @@ export class PatientRepository {
             await this.setTenant(client, tenantId);
             await this.assertAssignment(client, patientId, userId);
 
+            // Fetch existing KMS Key ID to reuse it for the update DEK
+            const exRows = await client.query<{ kms_key_id: string }>(
+                `SELECT kms_key_id FROM patients WHERE id = $1`, [patientId]
+            );
+            const kmsKeyId = exRows.rows[0].kms_key_id;
+            const dek = await KmsService.decryptDataKey(kmsKeyId);
+
             const sets: string[] = [];
             const vals: unknown[] = [];
             let idx = 1;
 
-            if (data.full_name !== undefined) { sets.push(`full_name_enc = $${idx++}`); vals.push(encrypt(data.full_name)); }
-            if (data.phone !== undefined) { sets.push(`phone_enc = $${idx++}`); vals.push(encrypt(data.phone)); }
-            if (data.date_of_birth !== undefined) { sets.push(`date_of_birth = $${idx++}`); vals.push(data.date_of_birth); }
+            if (data.full_name !== undefined) { sets.push(`full_name_enc = $${idx++}`); vals.push(CryptoService.encryptField(data.full_name, dek)); }
+            if (data.phone !== undefined) { sets.push(`phone_enc = $${idx++}`); vals.push(CryptoService.encryptField(data.phone, dek)); }
+            if (data.date_of_birth !== undefined) { sets.push(`date_of_birth = $${idx++}`); vals.push(CryptoService.encryptField(data.date_of_birth, dek)); }
             if (data.sex !== undefined) { sets.push(`sex = $${idx++}`); vals.push(data.sex); }
             if (data.national_id !== undefined) { sets.push(`national_id = $${idx++}`); vals.push(data.national_id); }
 
@@ -200,7 +204,7 @@ export class PatientRepository {
                 vals,
             );
             await client.query('COMMIT');
-            return rowToDto(rows[0]);
+            return await rowToDto(rows[0]);
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;

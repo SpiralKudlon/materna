@@ -153,9 +153,10 @@ describe('High Risk Alert E2E', () => {
         // Channel 3: In-App Facility (Console log simulated for Websocket)
         // Verified by the worker execution returning without errors
 
-        // 3. Verify 120-second SLA
-        // durationMs should be well under 120,000 ms. Typically under 50ms in testing.
-        expect(durationMs).toBeLessThan(120_000);
+        // 3. Verify 30-second SLA (Sprint 7 DoD: HIGH-risk SMS alerts < 30s)
+        // In practice this mock path resolves in < 100ms. The 30s ceiling is a
+        // hard gate: if real queue processing ever regresses beyond this, CI fails.
+        expect(durationMs).toBeLessThan(30_000);
 
         console.log(`✅ E2E High Risk Alert fulfilled in ${durationMs.toFixed(2)}ms`);
     });
