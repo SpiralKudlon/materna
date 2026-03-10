@@ -90,10 +90,10 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
 
     return (
         <>
-            <div className="relative inline-block shadow-lg rounded-full">
-                {/* Progress Background */}
+            <div className="relative inline-block">
+                {/* Progress Background - Normalized */}
                 <div
-                    className="absolute inset-0 bg-red-700 rounded-full transition-all ease-linear"
+                    className="absolute inset-0 bg-destructive/10 rounded-md transition-all ease-linear"
                     style={{
                         width: `${Math.min(progress, 100)}%`,
                         opacity: isHolding ? 1 : 0,
@@ -107,43 +107,42 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
                     onMouseLeave={clearHold}
                     onTouchStart={startHold}
                     onTouchEnd={clearHold}
-                    // Prevent default context menu on long press for mobile
                     onContextMenu={(e) => { e.preventDefault(); return false; }}
                     className={`
-            relative flex items-center justify-center px-8 py-4 font-bold text-white uppercase tracking-wider
-            rounded-full select-none overflow-hidden transition-all duration-200
-            ${isHolding ? 'scale-95 bg-transparent' : 'bg-red-600 hover:bg-red-500'}
-            focus:outline-none focus:ring-4 focus:ring-red-300
+            relative flex items-center justify-center px-4 py-2 font-medium text-sm
+            rounded-md select-none overflow-hidden transition-all duration-200 border
+            ${isHolding ? 'bg-transparent border-destructive text-destructive' : 'bg-destructive text-destructive-foreground border-transparent hover:bg-destructive/90'}
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
           `}
                 >
-                    <AlertCircle className="w-6 h-6 mr-2" />
-                    <span>{isHolding ? `HOLD TO CONFIRM... ${Math.ceil(3 - (progress / 100) * 3)}s` : 'EMERGENCY SOS'}</span>
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <span>{isHolding ? `Holding... ${Math.ceil(3 - (progress / 100) * 3)}s` : 'Trigger SOS'}</span>
                 </button>
             </div>
 
-            {/* Confirmation Modal */}
+            {/* Confirmation Modal - Normalized */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center mx-4 transform animate-in zoom-in-95">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 animate-in fade-in duration-200">
+                    <div className="bg-card border border-border shadow-md rounded-md p-6 max-w-sm w-full text-center mx-4">
                         {status === 'FIRING' && (
                             <div className="flex flex-col items-center">
-                                <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
-                                <h2 className="text-xl font-bold text-gray-900 mb-2">Initiating SOS...</h2>
-                                <p className="text-gray-500">Contacting emergency services and CHV.</p>
+                                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                                <h2 className="text-lg font-semibold text-foreground mb-1">Initiating SOS</h2>
+                                <p className="text-sm text-muted-foreground">Contacting emergency services.</p>
                             </div>
                         )}
 
                         {status === 'SUCCESS' && (
-                            <div className="flex flex-col items-center text-green-600">
-                                <CheckCircle2 className="w-20 h-20 mb-4 animate-bounce" />
-                                <h2 className="text-2xl font-bold mb-2">SOS Sent Successfully</h2>
-                                <p className="text-gray-600 mb-6">Help is on the way. Please stay calm and keep your phone nearby.</p>
+                            <div className="flex flex-col items-center text-foreground">
+                                <CheckCircle2 className="w-10 h-10 mb-4 text-green-600 dark:text-green-500" />
+                                <h2 className="text-lg font-semibold mb-1">SOS Dispatched</h2>
+                                <p className="text-sm text-muted-foreground mb-6">Help is on the way.</p>
                                 <button
                                     onClick={() => {
                                         setShowModal(false);
                                         setStatus('IDLE');
                                     }}
-                                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-xl transition-colors"
+                                    className="w-full py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium rounded-md transition-colors text-sm"
                                 >
                                     Close
                                 </button>
@@ -151,20 +150,20 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
                         )}
 
                         {status === 'ERROR' && (
-                            <div className="flex flex-col items-center text-red-600">
-                                <AlertCircle className="w-20 h-20 mb-4" />
-                                <h2 className="text-2xl font-bold mb-2">Failed to send SOS</h2>
-                                <p className="text-gray-600 mb-6">There was a network error. Please try again immediately or call your CHV directly.</p>
-                                <div className="flex gap-4 w-full">
+                            <div className="flex flex-col items-center text-foreground">
+                                <AlertCircle className="w-10 h-10 mb-4 text-destructive" />
+                                <h2 className="text-lg font-semibold mb-1">SOS Failed</h2>
+                                <p className="text-sm text-muted-foreground mb-6">Network error occurred. Try again.</p>
+                                <div className="flex gap-3 w-full">
                                     <button
                                         onClick={() => setShowModal(false)}
-                                        className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-xl transition-colors"
+                                        className="flex-1 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium rounded-md transition-colors text-sm"
                                     >
-                                        Cancel
+                                        Dismiss
                                     </button>
                                     <button
                                         onClick={triggerSosAsync}
-                                        className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+                                        className="flex-1 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium rounded-md transition-colors text-sm"
                                     >
                                         Retry
                                     </button>

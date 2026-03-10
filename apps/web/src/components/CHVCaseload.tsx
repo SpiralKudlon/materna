@@ -42,12 +42,12 @@ export function CHVCaseload() {
         });
     }, [patients, searchQuery, filterHighRisk]);
 
-    // Format risk badge color
+    // Format risk badge color - standard variants
     const getRiskBadgeVariant = (tier: RiskTier) => {
         switch (tier) {
             case 'HIGH': return 'destructive';
-            case 'MODERATE': return 'default'; // yellow via tailwind overrides if needed
-            case 'LOW': return 'secondary';
+            case 'MODERATE': return 'secondary';
+            case 'LOW': return 'outline';
             default: return 'outline';
         }
     };

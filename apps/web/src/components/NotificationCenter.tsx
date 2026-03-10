@@ -89,25 +89,25 @@ export function NotificationCenter() {
         <div className="relative inline-block" ref={dropdownRef}>
             <button
                 onClick={toggleDropdown}
-                className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none"
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
                 aria-label="Notifications"
             >
-                <Bell className="w-6 h-6" />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white animate-pulse">
+                    <span className="absolute top-1 right-1 inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] font-bold text-destructive-foreground bg-destructive rounded border border-card">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden transform origin-top-right transition-all duration-200 ease-out">
-                    <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-800">Notifications</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-popover rounded-md border border-border shadow-md z-50 overflow-hidden transform origin-top-right transition-all duration-200 ease-out">
+                    <div className="p-3 border-b border-border bg-muted/30 flex justify-between items-center">
+                        <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
                         {notifications.length > 0 && (
                             <button
                                 onClick={() => setNotifications([])}
-                                className="text-xs text-blue-600 hover:underline"
+                                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 Clear all
                             </button>
@@ -115,19 +115,19 @@ export function NotificationCenter() {
                     </div>
                     <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? (
-                            <div className="p-6 text-center text-gray-500">
-                                <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                                <p className="text-sm">No new notifications</p>
+                            <div className="p-6 text-center text-muted-foreground">
+                                <Bell className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                                <p className="text-xs">No new notifications</p>
                             </div>
                         ) : (
-                            <ul className="divide-y divide-gray-50">
+                            <ul className="divide-y divide-border">
                                 {notifications.map((notif) => (
                                     <li
                                         key={notif.id}
-                                        className="p-4 hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                                        className="p-3 hover:bg-muted/50 transition-colors text-sm text-foreground"
                                     >
-                                        <p className="font-medium">{notif.message}</p>
-                                        <p className="text-xs text-gray-400 mt-1">
+                                        <p className="font-medium text-sm leading-snug">{notif.message}</p>
+                                        <p className="text-[11px] text-muted-foreground mt-1.5">
                                             {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </li>

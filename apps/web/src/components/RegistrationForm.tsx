@@ -151,9 +151,9 @@ export function RegistrationForm() {
     }
 
     return (
-        <Card className="w-full max-w-lg mx-auto mt-8 shadow-lg border-t-4 border-t-primary">
+        <Card className="w-full max-w-lg mx-auto mt-8 shadow-sm">
             {/* ── Progress bar ─────────────────────────────────────── */}
-            <div className="w-full h-1.5 bg-muted rounded-t-lg overflow-hidden">
+            <div className="w-full h-1 bg-muted rounded-t-lg overflow-hidden">
                 <div
                     className="h-full bg-primary transition-all duration-300"
                     style={{ width: `${progress}%` }}
@@ -161,10 +161,10 @@ export function RegistrationForm() {
             </div>
 
             <CardHeader>
-                <div className="flex justify-between items-center mb-2">
-                    <CardTitle className="text-2xl font-bold">{t('registration.title')}</CardTitle>
-                    <span className="text-sm rounded-full bg-primary/10 text-primary px-3 py-1 font-medium">
-                        {currentStep + 1} / {STEPS.length}
+                <div className="flex justify-between items-center mb-1">
+                    <CardTitle className="text-xl font-semibold">{t('registration.title')}</CardTitle>
+                    <span className="text-sm text-muted-foreground font-medium">
+                        Step {currentStep + 1} of {STEPS.length}
                     </span>
                 </div>
                 <CardDescription>

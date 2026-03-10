@@ -11,7 +11,6 @@ import { CHVCaseload } from './components/CHVCaseload';
 import { SmsSimulator } from './components/SmsSimulator';
 import { useSyncQueue } from './hooks/useSyncQueue';
 import { WifiOff, Activity, Globe, LogOut } from 'lucide-react';
-import { Button } from './components/ui/button';
 
 function ProtectedLayout() {
   const { t, i18n } = useTranslation();
@@ -24,72 +23,74 @@ function ProtectedLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-50 flex flex-col">
-      {/* Header Bar */}
-      <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-10">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-lg md:text-xl tracking-tight">
-            <Activity className="h-6 w-6" />
+    <div className="min-h-screen bg-background font-sans antialiased text-foreground flex flex-col">
+      {/* Header Bar - Normal */}
+      <header className="bg-surface border-b sticky top-0 z-10">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-semibold text-sm">
+            <Activity className="h-4 w-4" />
             {t('app.title')}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 text-sm">
+            {/* Sync States - Normal text, no pill badges */}
             {syncing && (
-              <span className="text-sm font-medium animate-pulse flex items-center gap-2 bg-primary-foreground/20 px-3 py-1 rounded-full">
-                <Globe className="h-4 w-4" />
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Globe className="h-3.5 w-3.5" />
                 {t('app.syncing')}
               </span>
             )}
             {!syncing && isCacheValidating && (
-              <span className="text-sm font-medium animate-pulse flex items-center gap-2 bg-blue-500/20 text-blue-100 px-3 py-1 rounded-full">
-                <Activity className="h-4 w-4" />
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Activity className="h-3.5 w-3.5" />
                 Updating Cache...
               </span>
             )}
             {!syncing && !isCacheValidating && pendingCount > 0 && (
-              <span className="text-sm font-medium flex items-center gap-2 bg-yellow-500/20 text-yellow-100 px-3 py-1 rounded-full">
-                <WifiOff className="h-4 w-4" />
+              <span className="flex items-center gap-1.5 text-accent">
+                <WifiOff className="h-3.5 w-3.5" />
                 {pendingCount} pending
               </span>
             )}
             {user && (
-              <span className="text-sm hidden sm:inline opacity-80">
+              <span className="hidden sm:inline text-muted-foreground">
                 {user.name || user.email}
               </span>
             )}
-            <NotificationCenter />
-            <Button variant="secondary" size="sm" onClick={toggleLanguage} className="font-semibold shadow-sm">
-              {i18n.language === 'en' ? 'Swahili' : 'English'}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-primary-foreground hover:bg-primary-foreground/10">
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 border-l pl-4 ml-2">
+              <NotificationCenter />
+              <button onClick={toggleLanguage} className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                {i18n.language === 'en' ? 'SW' : 'EN'}
+              </button>
+              <button onClick={logout} className="text-muted-foreground hover:text-foreground transition-colors">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Offline Banner */}
+      {/* Offline Banner - Normal */}
       {!isOnline && (
-        <div className="bg-destructive text-destructive-foreground px-4 py-3 flex items-center justify-center gap-2 shadow-inner font-medium">
-          <WifiOff className="h-5 w-5" />
+        <div className="bg-accent/10 text-accent px-4 py-2 border-b border-accent/20 flex items-center justify-center gap-2 text-sm font-medium">
+          <WifiOff className="h-4 w-4" />
           <p>{t('app.offline_banner')}</p>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center relative gap-12">
-        <section className="w-full max-w-4xl">
+      {/* Main Content - Normal containment, no hero layouts */}
+      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col gap-12 max-w-5xl">
+        <section className="w-full">
           <RegistrationForm />
         </section>
 
-        <section className="w-full max-w-4xl pt-8 border-t">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Facility Caseload Queue</h2>
-            <p className="text-muted-foreground mt-1 text-sm">Manage pending referrals and monitor high-risk patients efficiently.</p>
+        <section className="w-full pt-8 border-t">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Facility Caseload Queue</h2>
           </div>
           <CHVCaseload />
         </section>
 
-        <section className="w-full max-w-4xl pt-8 border-t">
+        <section className="w-full pt-8 border-t">
           <SmsSimulator />
         </section>
 
@@ -98,9 +99,9 @@ function ProtectedLayout() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-100 dark:bg-slate-900 border-t py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center text-sm text-slate-500">
+      {/* Footer - Normal */}
+      <footer className="border-t py-6 mt-auto">
+        <div className="container mx-auto px-4 text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} Maternal System. All rights reserved.
         </div>
       </footer>
@@ -113,10 +114,10 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-pulse flex flex-col items-center gap-3">
-          <Activity className="h-10 w-10 text-emerald-600 animate-bounce" />
-          <span className="text-slate-500 text-sm font-medium">Loading...</span>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Activity className="h-4 w-4 animate-spin" />
+          <span className="text-sm font-medium">Loading...</span>
         </div>
       </div>
     );

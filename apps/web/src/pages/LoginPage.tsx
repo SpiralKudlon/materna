@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { loginSchema, type LoginFormData } from '../schemas/loginSchema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
@@ -13,9 +13,6 @@ import {
     Eye,
     EyeOff,
     AlertCircle,
-    Lock,
-    Mail,
-    Phone,
     Loader2,
     ShieldAlert,
 } from 'lucide-react';
@@ -53,41 +50,20 @@ export function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
-                style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                }}
-            />
-
-            <div className="w-full max-w-md relative z-10">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-[400px]">
                 {/* Logo section */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 mb-4">
-                        <Activity className="h-8 w-8" />
+                <div className="mb-8 text-center sm:text-left flex flex-col items-center sm:items-start gap-2">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-md bg-foreground text-background mb-2">
+                        <Activity className="h-5 w-5" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+                    <h1 className="text-xl font-semibold text-foreground tracking-tight">
                         {t('login.title', 'Maternal System')}
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                        {t('login.subtitle', 'Sign in to continue')}
-                    </p>
                 </div>
 
-                <Card className="shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg">
-                            {t('login.heading', 'Welcome back')}
-                        </CardTitle>
-                        <CardDescription>
-                            {mode === 'email'
-                                ? t('login.email_prompt', 'Enter your email and password')
-                                : t('login.phone_prompt', 'Enter your phone number and password')}
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
+                <Card className="rounded-lg border bg-card shadow-sm">
+                    <CardContent className="p-6">
                         {/* Error banner */}
                         {error && (
                             <div
@@ -107,12 +83,8 @@ export function LoginPage() {
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
                             {/* Identifier field */}
                             <div className="space-y-2">
-                                <Label htmlFor="identifier" className="flex items-center gap-1.5 text-sm font-medium">
-                                    {mode === 'email' ? (
-                                        <><Mail className="h-3.5 w-3.5" /> {t('login.email', 'Email')}</>
-                                    ) : (
-                                        <><Phone className="h-3.5 w-3.5" /> {t('login.phone', 'Phone')}</>
-                                    )}
+                                <Label htmlFor="identifier" className="text-sm font-medium">
+                                    {mode === 'email' ? t('login.email', 'Email') : t('login.phone', 'Phone number')}
                                 </Label>
                                 <Input
                                     id="identifier"
@@ -137,12 +109,12 @@ export function LoginPage() {
                             {/* Password field */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="flex items-center gap-1.5 text-sm font-medium">
-                                        <Lock className="h-3.5 w-3.5" /> {t('login.password', 'Password')}
+                                    <Label htmlFor="password" className="text-sm font-medium">
+                                        {t('login.password', 'Password')}
                                     </Label>
                                     <a
                                         href="/forgot-password"
-                                        className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline"
+                                        className="text-sm text-muted-foreground hover:text-foreground hover:underline"
                                     >
                                         {t('login.forgot', 'Forgot password?')}
                                     </a>
@@ -158,7 +130,7 @@ export function LoginPage() {
                                     />
                                     <button
                                         type="button"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                                         onClick={() => setShowPassword((prev) => !prev)}
                                         tabIndex={-1}
                                         aria-label={showPassword ? 'Hide password' : 'Show password'}
@@ -179,7 +151,7 @@ export function LoginPage() {
                                 id="login-submit"
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full h-11 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold shadow-md shadow-emerald-500/20 transition-all duration-200"
+                                className="w-full mt-2"
                             >
                                 {isLoading ? (
                                     <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('login.signing_in', 'Signing in...')}</>
@@ -190,11 +162,11 @@ export function LoginPage() {
                         </form>
 
                         {/* Mode toggle */}
-                        <div className="mt-5 pt-5 border-t text-center">
+                        <div className="mt-6 text-center">
                             <button
                                 type="button"
                                 onClick={toggleMode}
-                                className="text-sm text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 {mode === 'email'
                                     ? t('login.use_phone', 'Use phone number instead')
@@ -203,10 +175,6 @@ export function LoginPage() {
                         </div>
                     </CardContent>
                 </Card>
-
-                <p className="text-center text-xs text-slate-400 mt-6">
-                    © {new Date().getFullYear()} Maternal System
-                </p>
             </div>
         </div>
     );

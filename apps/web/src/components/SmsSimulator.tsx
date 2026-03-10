@@ -63,10 +63,10 @@ export function SmsSimulator() {
     };
 
     return (
-        <Card className="w-full shadow-lg border-primary/20 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950">
-            <CardHeader className="border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                <CardTitle className="flex items-center gap-2">
-                    <Smartphone className="h-5 w-5 text-primary" />
+        <Card className="w-full shadow-sm border">
+            <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                    <Smartphone className="h-5 w-5 text-muted-foreground" />
                     Virtual Phone Simulator
                 </CardTitle>
                 <CardDescription>
@@ -128,40 +128,40 @@ export function SmsSimulator() {
                     )}
                 </div>
 
-                {/* Right Column: Results Console */}
-                <div className="bg-slate-950 rounded-lg p-4 font-mono text-sm shadow-inner relative overflow-hidden flex flex-col">
-                    <div className="absolute top-0 left-0 w-full h-8 bg-slate-900 flex items-center px-4 border-b border-slate-800">
-                        <Terminal className="h-4 w-4 text-slate-400 mr-2" />
-                        <span className="text-xs text-slate-400 font-semibold tracking-wider">SMS-BRIDGE INTERPRETER</span>
+                {/* Right Column: Results Console - Normalized */}
+                <div className="rounded-md border bg-muted/30 p-4 font-mono text-sm flex flex-col min-h-[300px]">
+                    <div className="flex items-center border-b pb-2 mb-4">
+                        <Terminal className="h-4 w-4 text-muted-foreground mr-2" />
+                        <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">SMS-Bridge Log</span>
                     </div>
 
-                    <div className="pt-8 flex-grow overflow-y-auto min-h-[250px] text-slate-300 space-y-4">
+                    <div className="flex-grow overflow-y-auto space-y-4">
                         {!result && !loading && (
-                            <div className="flex h-full items-center justify-center text-slate-600 italic">
+                            <div className="flex h-full items-center justify-center text-muted-foreground italic">
                                 Awaiting transmission...
                             </div>
                         )}
 
                         {loading && (
-                            <div className="text-emerald-500 animate-pulse flex flex-col gap-2">
+                            <div className="text-muted-foreground animate-pulse flex flex-col gap-1">
                                 <span>{'> POST /api/v1/sms/simulate'}</span>
-                                <span>{'> Parsing language structures...'}</span>
+                                <span>{'> Processing payload...'}</span>
                             </div>
                         )}
 
                         {result && (
-                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="mb-4">
-                                    <span className="text-emerald-400 font-bold block mb-1">{'> ENGINE INTERPRETATION'}</span>
-                                    <pre className="bg-slate-900/80 p-3 rounded border border-slate-800 text-emerald-300 overflow-x-auto">
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-muted-foreground block mb-1 text-xs">{'> INTERPRETATION'}</span>
+                                    <pre className="bg-background p-3 rounded-md border text-foreground overflow-x-auto text-[13px]">
                                         {JSON.stringify(result.parsedCommand, null, 2)}
                                     </pre>
                                 </div>
 
                                 <div>
-                                    <span className="text-blue-400 font-bold block mb-1">{'> SIMULATED AT OUTBOUND SMS'}</span>
-                                    <div className="bg-blue-950/30 p-3 rounded border border-blue-900/50 text-blue-200">
-                                        <span className="opacity-70 text-xs block mb-1">TO: {result.simulatedPhone}</span>
+                                    <span className="text-muted-foreground block mb-1 text-xs">{'> OUTBOUND REPLY'}</span>
+                                    <div className="bg-background p-3 rounded-md border text-foreground text-[13px]">
+                                        <span className="text-muted-foreground text-xs block mb-2 border-b pb-1">TO: {result.simulatedPhone}</span>
                                         <p className="whitespace-pre-wrap">{result.simulatedReply}</p>
                                     </div>
                                 </div>
