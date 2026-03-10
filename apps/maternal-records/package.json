@@ -16,6 +16,7 @@
         "migrate:create": "node-pg-migrate create --migration-file-language sql"
     },
     "dependencies": {
+        "@aws-sdk/client-kms": "^3.1005.0",
         "fastify": "^5.7.4",
         "fastify-plugin": "^5.1.0",
         "kafkajs": "^2.2.4",
