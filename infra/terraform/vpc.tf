@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
 # Data Sources
 # ---------------------------------------------------------------------------
-data "aws_availability_zones" "available" {
-  state = "available"
+locals {
+  azs = ["af-south-1a", "af-south-1b", "af-south-1c"]
 }
 
 # ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ resource "aws_subnet" "public" {
   count                   = length(var.public_subnet_cidrs)
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidrs[count.index]
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
 
   tags = {
@@ -54,7 +54,7 @@ resource "aws_subnet" "private" {
   count             = length(var.private_subnet_cidrs)
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.private_subnet_cidrs[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  availability_zone = local.azs[count.index]
 
   tags = {
     Name                                        = "${var.cluster_name}-private-${count.index + 1}"
