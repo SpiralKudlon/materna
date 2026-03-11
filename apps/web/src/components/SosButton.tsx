@@ -108,6 +108,8 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
                     onTouchStart={startHold}
                     onTouchEnd={clearHold}
                     onContextMenu={(e) => { e.preventDefault(); return false; }}
+                    aria-label={isHolding ? `Hold to trigger SOS, ${Math.ceil(3 - (progress / 100) * 3)} seconds remaining` : 'Hold to trigger emergency SOS'}
+                    aria-live="assertive"
                     className={`
             relative flex items-center justify-center px-4 py-2 font-medium text-sm
             rounded-md select-none overflow-hidden transition-all duration-200 border
@@ -115,14 +117,14 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
             focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
           `}
                 >
-                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <AlertCircle className="w-4 h-4 mr-2" aria-hidden="true" />
                     <span>{isHolding ? `Holding... ${Math.ceil(3 - (progress / 100) * 3)}s` : 'Trigger SOS'}</span>
                 </button>
             </div>
 
             {/* Confirmation Modal - Normalized */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label="SOS Status">
                     <div className="bg-card border border-border shadow-md rounded-md p-6 max-w-sm w-full text-center mx-4">
                         {status === 'FIRING' && (
                             <div className="flex flex-col items-center">
@@ -150,7 +152,7 @@ export function SosButton({ patientId, onSosTriggered }: SosButtonProps) {
                         )}
 
                         {status === 'ERROR' && (
-                            <div className="flex flex-col items-center text-foreground">
+                            <div className="flex flex-col items-center text-foreground" role="alert">
                                 <AlertCircle className="w-10 h-10 mb-4 text-destructive" />
                                 <h2 className="text-lg font-semibold mb-1">SOS Failed</h2>
                                 <p className="text-sm text-muted-foreground mb-6">Network error occurred. Try again.</p>

@@ -1,0 +1,15 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: PagerDuty
+    receivers:
+      - uid: pagerduty-receiver
+        type: pagerduty
+        settings:
+          # Set PAGERDUTY_INTEGRATION_KEY in your environment or Grafana secrets manager
+          integrationKey: ${PAGERDUTY_INTEGRATION_KEY}
+          severity: critical
+          # Optional: auto-resolve when alert clears
+          autoResolve: true
+        disableResolveMessage: false

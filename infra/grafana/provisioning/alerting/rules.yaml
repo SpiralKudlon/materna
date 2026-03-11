@@ -1,0 +1,78 @@
+apiVersion: 1
+
+# ── 5xx Error Rate Alert ──────────────────────────────────────────────────────
+# Triggers a PagerDuty page when the 5xx HTTP error rate exceeds 1 % of all
+# requests in any rolling 5-minute window.
+#
+# LogQL explanation:
+#   Numerator   – count of log lines that contain an HTTP 5xx status code
+#   Denominator – count of ALL request log lines from the same job
+#   Threshold   – ratio > 0.01 (1 %)
+# ─────────────────────────────────────────────────────────────────────────────
+
+groups:
+  - orgId: 1
+    name: maternal-system-sla
+    folder: SLA Alerts
+    interval: 1m       # how often Grafana evaluates this group
+    rules:
+      - uid: 5xx-error-rate-alert
+        title: "High 5xx Error Rate (> 1% over 5m)"
+        condition: C
+        for: 5m         # must stay above threshold for 5 min before firing
+
+        data:
+          # A: Count of 5xx log lines in the last 5 minutes
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300   # 5 minutes in seconds
+              to: 0
+            model:
+              expr: >-
+                sum(count_over_time(
+                  {job="maternal-system"}
+                  |~ "\"status\"\\s*:\\s*\"5[0-9][0-9]\""
+                  [5m]
+                ))
+              legendFormat: "5xx count"
+              intervalMs: 60000
+              maxDataPoints: 43200
+              queryType: range
+
+          # B: Total request count in the last 5 minutes
+          - refId: B
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: >-
+                sum(count_over_time(
+                  {job="maternal-system"}
+                  |~ "\"status\""
+                  [5m]
+                ))
+              legendFormat: "total requests"
+              intervalMs: 60000
+              maxDataPoints: 43200
+              queryType: range
+
+          # C: Threshold expression – fire when ratio exceeds 0.01
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: math
+              expression: "$A / $B > 0.01"
+
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: "5xx error rate exceeded 1% over the last 5 minutes"
+          description: >-
+            The ratio of HTTP 5xx responses to total requests is above 1 %.
+            Investigate service logs in Grafana Explore → Loki → job=maternal-system.
+          runbook_url: "https://github.com/SpiralKudlon/maternal-system/docs/runbooks/5xx-alert.md"
+        labels:
+          severity: critical
+          team: backend

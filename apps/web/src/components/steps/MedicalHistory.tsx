@@ -47,6 +47,7 @@ export function MedicalHistory({ userRoles }: MedicalHistoryProps) {
                                     type="button"
                                     className="text-xs text-primary underline"
                                     onClick={() => setIsMasked(prev => !prev)}
+                                    aria-label={isMasked ? 'Show HIV status' : 'Hide HIV status'}
                                 >
                                     {isMasked ? 'Show' : 'Hide'}
                                 </button>
@@ -55,8 +56,9 @@ export function MedicalHistory({ userRoles }: MedicalHistoryProps) {
 
                         {isMasked ? (
                             /* Masked view for CHV or when PROVIDER toggles off */
-                            <div className="flex items-center h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-muted-foreground">
-                                <span className="tracking-widest">●●●●●●●●</span>
+                            <div className="flex items-center h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-muted-foreground" role="status" aria-live="polite">
+                                <span className="tracking-widest" aria-hidden="true">●●●●●●●●</span>
+                                <span className="sr-only">HIV status is hidden</span>
                                 <span className="ml-auto text-xs">
                                     {canViewHiv ? 'Click Show to reveal' : 'Restricted — PROVIDER access only'}
                                 </span>
