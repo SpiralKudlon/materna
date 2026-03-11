@@ -1,0 +1,20 @@
+{
+  "name": "maternal-system-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "host.docker.internal",
+    "database.port": "5432",
+    "database.user": "user",
+    "database.password": "password",
+    "database.dbname": "maternal_records",
+    "database.server.name": "dbserver1",
+    "table.include.list": "public.patients,public.facilities,public.anc_visits,public.risk_scores,public.symptom_logs",
+    "plugin.name": "pgoutput",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "slot.name": "debezium_slot"
+  }
+}
