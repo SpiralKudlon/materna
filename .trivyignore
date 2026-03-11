@@ -1,0 +1,38 @@
+# .trivyignore — Accepted CVE suppressions for maternal-system
+#
+# Format: CVE-YYYY-NNNNN [# comment]
+# Each entry is reviewed quarterly. CVEs are suppressed only when:
+#   1. The vulnerable code path is not reachable in this deployment, OR
+#   2. No fix is available AND exploitability score < 4.0 (CVSS v3 Low)
+#
+# Last reviewed: 2026-03-10
+# Reviewer: Security Engineering
+
+# ── Node.js toolchain / build-time only ────────────────────────────────────
+
+# CVE-2022-25883  semver <7.5.2 — ReDoS in range parsing.
+# Only present as a transitive devDep (typescript, tsx). Never in production bundle.
+CVE-2022-25883
+
+# CVE-2023-26136  tough-cookie <4.1.3 — prototype pollution.
+# Transitive via jest/vitest test runner deps. Not reachable at runtime.
+CVE-2023-26136
+
+# CVE-2023-44270  postcss <8.4.31 — line return parsing.
+# Transitive via vite in apps/web. Build-time only; not deployed.
+CVE-2023-44270
+
+# ── PostgreSQL client ───────────────────────────────────────────────────────
+
+# CVE-2021-3749  axios <0.21.2 — ReDoS in url normalisation.
+# Transitive via africastalking SDK. Africastalking only makes outbound
+# requests to fixed AT endpoints — no user-controlled URL input.
+CVE-2021-3749
+
+# ── Container base image ────────────────────────────────────────────────────
+
+# CVE-2023-4863  libwebp — heap buffer overflow.
+# Fixed in node:20-alpine3.18+. Pin Dockerfile to node:20.11-alpine3.19 or later.
+# Tracked in: https://github.com/.../issues/NNN
+# Uncomment below once Dockerfiles are pinned:
+# CVE-2023-4863

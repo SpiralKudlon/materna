@@ -1,0 +1,35 @@
+# Snyk policy file — maternal-system
+# https://docs.snyk.io/snyk-cli/test-for-vulnerabilities/the-snyk-file
+
+version: v1.25.1
+
+# ── Ignore rules ───────────────────────────────────────────────────────────
+#
+# Accepted-risk suppressions must be reviewed at each quarterly security review.
+# Each entry requires: reason, who approved, expiry date.
+#
+ignore:
+  # node-vault (GHSA-*): the package is used ONLY at server startup for secret
+  # fetching. The reported path traversal affects the CLI binary, not the SDK.
+  # Approved: Security Lead  Expiry: 2026-09-01
+  SNYK-JS-NODEVAULT-*:
+    - '*':
+        reason: >
+          node-vault is used exclusively as a Vault HTTP client SDK in sms-bridge.
+          The reported vulnerability affects the optional Vault CLI binary path,
+          which is never invoked. No network-accessible attack surface.
+        expires: '2026-09-01T00:00:00.000Z'
+
+  # SONATYPE-2021-0100 / npm audit: inflight@1.0.6 (transitive via node-pg-migrate)
+  # No fix available; package is a test-time dependency only.
+  # Approved: Security Lead  Expiry: 2026-09-01
+  SNYK-JS-INFLIGHT-6095116:
+    - '*':
+        reason: >
+          inflight is a transitive dev dependency of node-pg-migrate used only
+          during migration runs (CLI, not production runtime). The vulnerability
+          requires attacker control of the event loop; not applicable here.
+        expires: '2026-09-01T00:00:00.000Z'
+
+# ── Patch policy ───────────────────────────────────────────────────────────
+patch: {}

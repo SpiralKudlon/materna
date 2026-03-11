@@ -2,11 +2,19 @@ import { Worker, type Job } from 'bullmq';
 import { connection } from '../queues/index.js';
 import AfricasTalking from 'africastalking';
 import { env } from '../config/env.js';
+import { createAtVoiceBreaker, createAtSmsBreaker } from '../lib/circuit-breakers.js';
 
 const at = AfricasTalking({
     apiKey: env.AT_API_KEY,
     username: env.AT_USERNAME,
 });
+
+// Initialise Breakers
+const sendSms = async (payload: { to: string[], message: string, from?: string }) => at.SMS.send(payload);
+const makeCall = async (payload: { callFrom: string, callTo: string[] }) => at.VOICE.call(payload);
+
+const atSmsBreaker = createAtSmsBreaker(sendSms);
+const atVoiceBreaker = createAtVoiceBreaker(makeCall, (payload) => atSmsBreaker.fire(payload), env.AT_VIRTUAL_NUMBER ?? '');
 
 export interface EmergencySosData {
     patientId: string;
@@ -34,11 +42,11 @@ export const emergencySosWorker = new Worker(
 
         try {
             console.log(`[EmergencyWorker] Initiating Africa's Talking Voice Call to CHV ${data.chvPhone}`);
-            // Fire voice call via AT
+            // Fire voice call via Circuit Breaker
             if (!env.AT_VIRTUAL_NUMBER) {
                 console.warn('[EmergencyWorker] No virtual number configured for Voice. Simulating call.');
             } else {
-                await at.VOICE.call({
+                await atVoiceBreaker.fire({
                     callFrom: env.AT_VIRTUAL_NUMBER,
                     callTo: [data.chvPhone],
                 });

@@ -1,0 +1,11 @@
+groups:
+  - name: maternal-system-reliability
+    rules:
+      - alert: PgPoolExhaustion
+        expr: pg_pool_utilization_ratio > 0.90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL pool nearing exhaustion in {{ $labels.job }}"
+          description: "Connection pool utilization has been > 90% for 2 minutes. Current value: {{ $value }}."

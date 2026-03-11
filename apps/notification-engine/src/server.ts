@@ -8,6 +8,7 @@ import './workers/notification.worker.js';
 import './workers/emergency.worker.js';
 import './workers/digest.worker.js';
 import { scheduleDigestJob } from './queues/digest.queue.js';
+import { registry } from './lib/metrics.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
     const app = fastify({
@@ -41,6 +42,11 @@ export async function buildApp(): Promise<FastifyInstance> {
     });
 
     app.register(notifyRoutes);
+
+    app.get('/metrics', async (_request, reply) => {
+        const metrics = await registry.metrics();
+        reply.type(registry.contentType).send(metrics);
+    });
 
     app.get('/health', async () => {
         return { status: 'ok', service: 'notification-engine' };
