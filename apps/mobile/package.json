@@ -1,10 +1,19 @@
 {
-    "name": "mobile",
-    "version": "1.0.0",
-    "private": true,
-    "scripts": {
-        "build": "echo \"Building mobile app...\"",
-        "lint": "echo \"Linting mobile app...\"",
-        "test": "echo \"Testing mobile app...\""
-    }
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~55.0.5",
+    "expo-build-properties": "~55.0.9",
+    "expo-status-bar": "~55.0.4",
+    "react": "19.2.0",
+    "react-native": "0.83.2"
+  },
+  "private": true
 }
