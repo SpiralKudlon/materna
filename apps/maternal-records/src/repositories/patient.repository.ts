@@ -4,10 +4,15 @@
  * Data access for the patients table.
  * Every query enforces tenant isolation via SET LOCAL and
  * checks that the requesting user is assigned to the patient.
+ *
+ * Audit context (userId, ip, userAgent) is injected into the PostgreSQL
+ * session at the start of every transaction so that the record_audit_event()
+ * trigger can attach full request provenance to each audit_events row.
  */
 import type { Pool, PoolClient } from 'pg';
 import { CryptoService } from '../services/crypto.service.js';
 import { KmsService } from '../services/kms.service.js';
+import { setAuditContext, type AuditContext } from '../services/audit-context.service.js';
 
 export interface PatientRow {
     id: string;
@@ -36,8 +41,7 @@ export interface PatientDTO {
     updated_at: string;
 }
 
-// ── Encryption helpers (AES-256-GCM) ──────────────────────────────────
-// Now using KMS Data Encryption Keys (DEK) and CryptoService.
+// ── Decryption helper ──────────────────────────────────────────────────────
 
 async function rowToDto(row: PatientRow): Promise<PatientDTO> {
     const dek = await KmsService.decryptDataKey(row.kms_key_id);
@@ -56,21 +60,26 @@ async function rowToDto(row: PatientRow): Promise<PatientDTO> {
     };
 }
 
-// ── Repository ─────────────────────────────────────────────────────────
+// ── Repository ─────────────────────────────────────────────────────────────
 
 export class PatientRepository {
     constructor(private pool: Pool) { }
 
-    /** Set tenant context on a client for RLS. */
-    private async setTenant(client: PoolClient, tenantId: string): Promise<void> {
+    /**
+     * Opens a transaction, sets tenant isolation (RLS) and audit context
+     * (user_id, ip, user_agent) as session-local variables.
+     */
+    private async beginWithContext(
+        client: PoolClient,
+        tenantId: string,
+        auditCtx: AuditContext,
+    ): Promise<void> {
+        await client.query('BEGIN');
         await client.query(`SET LOCAL app.current_tenant_id = $1`, [tenantId]);
+        await setAuditContext(client, auditCtx);
     }
 
-    /**
-     * Verify that the requesting user is assigned to this patient.
-     * CHVs can only access patients they registered.
-     * Throws if not authorised.
-     */
+    /** Verify that the requesting user is assigned to this patient. */
     private async assertAssignment(
         client: PoolClient,
         patientId: string,
@@ -91,11 +100,11 @@ export class PatientRepository {
         tenantId: string,
         userId: string,
         data: { full_name: string; phone: string; date_of_birth?: string; sex?: string; national_id?: string },
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
     ): Promise<PatientDTO> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
-            await this.setTenant(client, tenantId);
+            await this.beginWithContext(client, tenantId, auditCtx);
 
             const { plaintextDek, kmsKeyId } = await KmsService.generateDataKey();
 
@@ -124,11 +133,15 @@ export class PatientRepository {
         }
     }
 
-    async findById(tenantId: string, userId: string, patientId: string): Promise<PatientDTO | null> {
+    async findById(
+        tenantId: string,
+        userId: string,
+        patientId: string,
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
+    ): Promise<PatientDTO | null> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
-            await this.setTenant(client, tenantId);
+            await this.beginWithContext(client, tenantId, auditCtx);
             await this.assertAssignment(client, patientId, userId);
 
             const { rows } = await client.query<PatientRow>(
@@ -144,11 +157,15 @@ export class PatientRepository {
         }
     }
 
-    async listByTenant(tenantId: string, limit = 50, offset = 0): Promise<PatientDTO[]> {
+    async listByTenant(
+        tenantId: string,
+        limit = 50,
+        offset = 0,
+        auditCtx: AuditContext = { userId: null, tenantId, ip: null, userAgent: null },
+    ): Promise<PatientDTO[]> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
-            await this.setTenant(client, tenantId);
+            await this.beginWithContext(client, tenantId, auditCtx);
 
             const { rows } = await client.query<PatientRow>(
                 `SELECT * FROM patients ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
@@ -169,14 +186,13 @@ export class PatientRepository {
         userId: string,
         patientId: string,
         data: { full_name?: string; phone?: string; date_of_birth?: string; sex?: string; national_id?: string },
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
     ): Promise<PatientDTO> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
-            await this.setTenant(client, tenantId);
+            await this.beginWithContext(client, tenantId, auditCtx);
             await this.assertAssignment(client, patientId, userId);
 
-            // Fetch existing KMS Key ID to reuse it for the update DEK
             const exRows = await client.query<{ kms_key_id: string }>(
                 `SELECT kms_key_id FROM patients WHERE id = $1`, [patientId]
             );
@@ -213,11 +229,15 @@ export class PatientRepository {
         }
     }
 
-    async delete(tenantId: string, userId: string, patientId: string): Promise<boolean> {
+    async delete(
+        tenantId: string,
+        userId: string,
+        patientId: string,
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
+    ): Promise<boolean> {
         const client = await this.pool.connect();
         try {
-            await client.query('BEGIN');
-            await this.setTenant(client, tenantId);
+            await this.beginWithContext(client, tenantId, auditCtx);
             await this.assertAssignment(client, patientId, userId);
 
             const { rowCount } = await client.query(

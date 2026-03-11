@@ -1,0 +1,46 @@
+name: Security Scan
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+    schedule:
+        - cron: "0 4 * * 1" # Run every Monday at 4:00 AM
+
+jobs:
+    snyk:
+        name: Snyk Dependency Scan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Snyk Auth
+              run: npm i -g snyk && snyk auth ${{ secrets.SNYK_TOKEN }}
+
+            # Exits > 0 only if HIGH/CRITICAL found (respecting .snyk suppressions)
+            - name: Run Snyk
+              run: snyk test --all-projects --severity-threshold=high
+
+    trivy:
+        name: Trivy Filesystem Scan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            # Uses .trivyignore automatically if present in workspace root
+            - name: Run Trivy FS Scanner
+              uses: aquasecurity/trivy-action@master
+              with:
+                  scan-type: "fs"
+                  scan-ref: "."
+                  severity: "HIGH,CRITICAL"
+                  exit-code: "1" # Fail CI on findings
+                  ignore-unfixed: true

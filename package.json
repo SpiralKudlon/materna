@@ -10,7 +10,8 @@
     "dev": "turbo run dev --env-mode=loose",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "security:check": "snyk test --all-projects --severity-threshold=high && trivy fs --exit-code 1 --severity HIGH,CRITICAL ."
   },
   "devDependencies": {
     "turbo": "^2.0.0",

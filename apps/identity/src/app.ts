@@ -26,6 +26,9 @@ import { ConsoleSmsService } from './services/sms.service.js';
 import { authRoutes } from './routes/auth.routes.js';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import gatekeeperPlugin from './plugins/gatekeeper.plugin.js';
+import helmet from '@fastify/helmet';
+
+
 
 // ── Public paths whitelist ────────────────────────────────────────────────
 const PUBLIC_PATHS = [
@@ -72,6 +75,31 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
                 genReqId: () => crypto.randomUUID(),
             }
             : false,
+    });
+
+    // ── Security headers (Mozilla Observatory A+) ─────────────────────────
+    // Registered first so every response — including 4xx/5xx — carries headers.
+    await app.register(helmet, {
+        contentSecurityPolicy: {
+            directives: {
+                'default-src': ["'none'"],
+                'frame-ancestors': ["'none'"],
+                'form-action': ["'none'"],
+                'upgrade-insecure-requests': [],
+            },
+        },
+        strictTransportSecurity: { maxAge: 63_072_000, includeSubDomains: true, preload: true },
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+        crossOriginResourcePolicy: { policy: 'same-origin' },
+        crossOriginEmbedderPolicy: false,
+        hidePoweredBy: true,
+    });
+    app.addHook('onSend', async (_req, reply) => {
+        reply.header('Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     });
 
     // ── Rate limiting ──────────────────────────────────────────────────────

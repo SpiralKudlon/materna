@@ -5,6 +5,7 @@
  */
 import Fastify from 'fastify';
 import type { Pool } from 'pg';
+import helmet from '@fastify/helmet';
 import { PatientRepository } from './repositories/patient.repository.js';
 import { VisitRepository } from './repositories/visit.repository.js';
 import { MedicationRepository } from './repositories/medication.repository.js';
@@ -24,6 +25,30 @@ export async function buildApp(opts: BuildAppOptions) {
         logger: {
             level: process.env.NODE_ENV === 'test' ? 'silent' : 'info',
         },
+    });
+
+    // ── Security headers (Mozilla Observatory A+) ─────────────────────────
+    await app.register(helmet, {
+        contentSecurityPolicy: {
+            directives: {
+                'default-src': ["'none'"],
+                'frame-ancestors': ["'none'"],
+                'form-action': ["'none'"],
+                'upgrade-insecure-requests': [],
+            },
+        },
+        strictTransportSecurity: { maxAge: 63_072_000, includeSubDomains: true, preload: true },
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+        crossOriginResourcePolicy: { policy: 'same-origin' },
+        crossOriginEmbedderPolicy: false,
+        hidePoweredBy: true,
+    });
+    app.addHook('onSend', async (_req, reply) => {
+        reply.header('Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     });
 
     // Repositories

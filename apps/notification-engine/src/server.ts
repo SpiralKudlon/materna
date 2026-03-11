@@ -1,4 +1,5 @@
 import fastify, { FastifyInstance } from 'fastify';
+import helmet from '@fastify/helmet';
 import { env } from './config/env.js';
 import { notifyRoutes } from './routes/notify.routes.js';
 
@@ -13,6 +14,30 @@ export async function buildApp(): Promise<FastifyInstance> {
         logger: {
             level: env.NODE_ENV === 'development' ? 'debug' : 'info',
         },
+    });
+
+    // ── Security headers (Mozilla Observatory A+) ─────────────────────────
+    await app.register(helmet, {
+        contentSecurityPolicy: {
+            directives: {
+                'default-src': ["'none'"],
+                'frame-ancestors': ["'none'"],
+                'form-action': ["'none'"],
+                'upgrade-insecure-requests': [],
+            },
+        },
+        strictTransportSecurity: { maxAge: 63_072_000, includeSubDomains: true, preload: true },
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+        crossOriginResourcePolicy: { policy: 'same-origin' },
+        crossOriginEmbedderPolicy: false,
+        hidePoweredBy: true,
+    });
+    app.addHook('onSend', async (_req, reply) => {
+        reply.header('Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     });
 
     app.register(notifyRoutes);

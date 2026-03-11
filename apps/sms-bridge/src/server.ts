@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
+import helmet from '@fastify/helmet';
 import { env } from './config/env.js';
 import { getSmsSecrets } from './config/vault.js';
 import { AfricasTalkingProvider, TwilioProvider } from './services/sms.strategy.js';
@@ -19,7 +20,35 @@ export async function buildApp(): Promise<FastifyInstance> {
         },
     });
 
-    await app.register(cors, { origin: ['http://localhost:5173'] });
+    // ── Security headers (Mozilla Observatory A+) ─────────────────────────
+    await app.register(helmet, {
+        contentSecurityPolicy: {
+            directives: {
+                'default-src': ["'none'"],
+                'frame-ancestors': ["'none'"],
+                'form-action': ["'none'"],
+                'upgrade-insecure-requests': [],
+            },
+        },
+        strictTransportSecurity: { maxAge: 63_072_000, includeSubDomains: true, preload: true },
+        xContentTypeOptions: true,
+        xFrameOptions: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+        crossOriginResourcePolicy: { policy: 'same-origin' },
+        crossOriginEmbedderPolicy: false,
+        hidePoweredBy: true,
+    });
+    app.addHook('onSend', async (_req, reply) => {
+        reply.header('Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+    });
+
+    // ── CORS — env-aware (no localhost in production) ───────────────────
+    const allowedOrigins = env.NODE_ENV === 'production'
+        ? (process.env['ALLOWED_ORIGINS'] ?? '').split(',').map((o: string) => o.trim()).filter(Boolean)
+        : ['http://localhost:5173', 'http://localhost:3000'];
+    await app.register(cors, { origin: allowedOrigins });
     await app.register(formbody);
 
     // We fetch secrets early to fail fast on startup if missing.

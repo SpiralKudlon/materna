@@ -115,18 +115,30 @@ describe('PatientRepository', () => {
             expect(dto).not.toHaveProperty('phone_enc');
         });
 
-        it('calls BEGIN → SET LOCAL → INSERT → COMMIT', async () => {
+        it('calls BEGIN → SET LOCAL → audit context → INSERT → COMMIT', async () => {
             resolveQueryByPattern(client, {
                 'INSERT INTO patients': { rows: [makePatientRow()], rowCount: 1 } as QueryResult,
             });
             await repo.create(TENANT, USER, { full_name: 'X', phone: '0' });
 
-            const calls = client.query.mock.calls.map((c: unknown[]) => (c[0] as string).trim().substring(0, 20));
+            const calls = client.query.mock.calls.map((c: unknown[]) => (c[0] as string).trim());
+
+            // BEGIN is always first
             expect(calls[0]).toBe('BEGIN');
+
+            // SET LOCAL (tenant) comes immediately after BEGIN
             expect(calls[1]).toContain('SET LOCAL');
-            expect(calls[2]).toContain('INSERT INTO patients');
-            expect(calls[3]).toBe('COMMIT');
+
+            // Audit context DO block and INSERT both appear somewhere after SET LOCAL
+            const auditIdx = calls.findIndex((s: string) => s.includes('app.current_user_id'));
+            const insertIdx = calls.findIndex((s: string) => s.includes('INSERT INTO patients'));
+            const commitIdx = calls.indexOf('COMMIT');
+
+            expect(auditIdx).toBeGreaterThan(1);   // after SET LOCAL
+            expect(insertIdx).toBeGreaterThan(auditIdx);  // INSERT after audit context
+            expect(commitIdx).toBeGreaterThan(insertIdx); // COMMIT is last
         });
+
 
         it('rolls back on insert failure and releases client', async () => {
             client.query.mockImplementation((sql: string) => {
