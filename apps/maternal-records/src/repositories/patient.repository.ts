@@ -13,6 +13,7 @@ import type { Pool, PoolClient } from 'pg';
 import { CryptoService } from '../services/crypto.service.js';
 import { KmsService } from '../services/kms.service.js';
 import { setAuditContext, type AuditContext } from '../services/audit-context.service.js';
+import { type CacheService, CacheKeys, CacheTTL } from '../services/cache.service.js';
 
 export interface PatientRow {
     id: string;
@@ -63,7 +64,7 @@ async function rowToDto(row: PatientRow): Promise<PatientDTO> {
 // ── Repository ─────────────────────────────────────────────────────────────
 
 export class PatientRepository {
-    constructor(private pool: Pool) { }
+    constructor(private pool: Pool, private cache?: CacheService) { }
 
     /**
      * Opens a transaction, sets tenant isolation (RLS) and audit context
@@ -139,6 +140,19 @@ export class PatientRepository {
         patientId: string,
         auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
     ): Promise<PatientDTO | null> {
+        const cacheKey = CacheKeys.patient(tenantId, patientId);
+
+        return this.cache?.getOrSet<PatientDTO | null>(cacheKey, CacheTTL.PATIENT, () =>
+            this._findByIdDb(tenantId, userId, patientId, auditCtx)
+        ) ?? this._findByIdDb(tenantId, userId, patientId, auditCtx);
+    }
+
+    private async _findByIdDb(
+        tenantId: string,
+        userId: string,
+        patientId: string,
+        auditCtx: AuditContext,
+    ): Promise<PatientDTO | null> {
         const client = await this.pool.connect();
         try {
             await this.beginWithContext(client, tenantId, auditCtx);
@@ -188,6 +202,19 @@ export class PatientRepository {
         data: { full_name?: string; phone?: string; date_of_birth?: string; sex?: string; national_id?: string },
         auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
     ): Promise<PatientDTO> {
+        const result = await this._updateDb(tenantId, userId, patientId, data, auditCtx);
+        // Invalidate stale profile immediately after commit
+        await this.cache?.invalidate(CacheKeys.patient(tenantId, patientId));
+        return result;
+    }
+
+    private async _updateDb(
+        tenantId: string,
+        userId: string,
+        patientId: string,
+        data: { full_name?: string; phone?: string; date_of_birth?: string; sex?: string; national_id?: string },
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
+    ): Promise<PatientDTO> {
         const client = await this.pool.connect();
         try {
             await this.beginWithContext(client, tenantId, auditCtx);
@@ -230,6 +257,20 @@ export class PatientRepository {
     }
 
     async delete(
+        tenantId: string,
+        userId: string,
+        patientId: string,
+        auditCtx: AuditContext = { userId, tenantId, ip: null, userAgent: null },
+    ): Promise<boolean> {
+        const deleted = await this._deleteDb(tenantId, userId, patientId, auditCtx);
+        if (deleted) {
+            // Bust cached profile so no stale data is served post-deletion
+            await this.cache?.invalidate(CacheKeys.patient(tenantId, patientId));
+        }
+        return deleted;
+    }
+
+    private async _deleteDb(
         tenantId: string,
         userId: string,
         patientId: string,

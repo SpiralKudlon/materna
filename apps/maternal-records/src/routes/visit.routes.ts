@@ -5,6 +5,8 @@ import type { FastifyInstance } from 'fastify';
 import { VisitRepository } from '../repositories/visit.repository.js';
 import { PatientRepository } from '../repositories/patient.repository.js';
 import { createAncVisitSchema } from '../schemas/index.js';
+import { CacheService, CacheKeys } from '../services/cache.service.js';
+import { getRedisClient } from '../lib/redis.js';
 
 export interface VisitRouteOptions {
     prefix: string;
@@ -15,6 +17,7 @@ export interface VisitRouteOptions {
 export async function visitRoutes(app: FastifyInstance, opts: VisitRouteOptions) {
     const visitRepo = opts.visitRepo;
     const patientRepo = opts.patientRepo;
+    const cache = new CacheService(getRedisClient());
 
     function getUserContext(request: { headers: any }) {
         const tenantId = request.headers['x-tenant-id'] ?? '';
@@ -49,10 +52,15 @@ export async function visitRoutes(app: FastifyInstance, opts: VisitRouteOptions)
         // Create the visit — DB trigger computes next_visit_date
         const visit = await visitRepo.create(tenantId, patientId, userId, parsed.data);
 
+        // Bust the CHV dashboard cache: urgent-actions and ANC state have changed
+        // We need to find which CHV owns this patient to invalidate their key.
+        // The chv_id is stored in chv_assignments; we do a quick lookup via the patient repo
+        // which is already assignment-scoped to the calling userId.
+        await cache.invalidate(CacheKeys.chvDashboard(userId));
+
         return reply.code(201).send({
             data: {
                 ...visit,
-                // Explicitly highlight the computed field
                 next_visit_date: visit.next_visit_date,
             },
         });

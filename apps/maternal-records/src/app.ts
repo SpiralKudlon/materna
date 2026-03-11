@@ -15,6 +15,8 @@ import { medicationRoutes } from './routes/medication.routes.js';
 import { dashboardRoutes } from './routes/dashboard.routes.js';
 import { referralRoutes } from './routes/referral.routes.js';
 import { facilityRoutes } from './routes/facility.routes.js';
+import { CacheService } from './services/cache.service.js';
+import { getRedisClient, closeRedisClient } from './lib/redis.js';
 
 export interface BuildAppOptions {
     pool: Pool;
@@ -52,9 +54,15 @@ export async function buildApp(opts: BuildAppOptions) {
     });
 
     // Repositories
-    const patientRepo = new PatientRepository(opts.pool);
+    const cache = new CacheService(getRedisClient());
+    const patientRepo = new PatientRepository(opts.pool, cache);
     const visitRepo = new VisitRepository(opts.pool);
     const medicationRepo = new MedicationRepository(opts.pool);
+
+    // Graceful shutdown: close Redis before process exits
+    const shutdown = async () => { await closeRedisClient(); };
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
 
     // Ensure medication_logs table exists (idempotent)
     if (process.env.NODE_ENV !== 'test') {
