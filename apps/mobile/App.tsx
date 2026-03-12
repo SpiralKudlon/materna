@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, FlatList, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useNetworkSync } from './src/hooks/useNetworkSync';
 import { useSyncStore } from './src/store/syncStore';
-import { requestUserPermission, applyForegroundListener } from './src/services/fcm';
 import { NotificationService } from './src/services/notifications';
 import { logSymptom } from './src/services/symptoms';
 import NetInfo from '@react-native-community/netinfo';
@@ -20,13 +19,9 @@ export default function App() {
   const { queue } = useSyncStore();
 
   useEffect(() => {
-    // Legacy FCM setup
-    requestUserPermission();
-    const unsubscribeFcm = applyForegroundListener((data) => {
-      console.log('User tapped the push notification action:', data);
-    });
-
-    // New Expo/Firebase Notification Service
+    // New Expo/Firebase Notification Service (Consolidated)
+    NotificationService.initialize();
+    NotificationService.requestUserPermission();
     const unsubscribeNotifications = NotificationService.setupListeners();
     NotificationService.registerForPushNotifications('MOCK_JWT_TOKEN', 'tenant-1');
 
@@ -35,7 +30,6 @@ export default function App() {
     });
 
     return () => {
-      unsubscribeFcm();
       unsubscribeNotifications();
       unsubscribeNet();
     };

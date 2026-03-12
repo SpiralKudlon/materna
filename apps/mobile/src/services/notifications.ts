@@ -3,31 +3,45 @@ import messaging from '@react-native-firebase/messaging';
 import { Alert, Platform } from 'react-native';
 import { ApiClient } from '../api/client';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 export class NotificationService {
+  static initialize() {
+    try {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    } catch (e) {
+      console.error('[NotificationService] Failed to set handler:', e);
+    }
+  }
+  static async requestUserPermission() {
+    try {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      
+      if (enabled) {
+        console.log('[NotificationService] Permission granted:', authStatus);
+      } else {
+        console.warn('[NotificationService] Permission denied');
+      }
+      return enabled;
+    } catch (error) {
+      console.error('[NotificationService] Error requesting permission:', error);
+      return false;
+    }
+  }
+
   static async registerForPushNotifications(jwtToken: string, tenantId: string) {
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        console.warn('Notification permissions denied');
-        return;
-      }
+      const hasPermission = await this.requestUserPermission();
+      if (!hasPermission) return;
 
       // Get FCM Token
       const token = await messaging().getToken();
@@ -84,12 +98,5 @@ export class NotificationService {
     });
 
     return unsubscribe;
-  }
-
-  static setupBackgroundHandler() {
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('Background FCM Message handled:', remoteMessage.data);
-      // Background handling logic (e.g. syncing data or showing local notifications)
-    });
   }
 }
