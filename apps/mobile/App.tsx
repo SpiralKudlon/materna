@@ -12,6 +12,7 @@ import DashboardScreen from './src/screens/Dashboard/DashboardScreen';
 // Note: In real app, configure NativeWind globals. For demo, NativeWind processes className strings.
 
 export default function App() {
+  console.log('[DEBUG] App.tsx: Component rendering');
   const [isConnected, setConnected] = useState<boolean>(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'registration'>('dashboard');
   
@@ -20,17 +21,17 @@ export default function App() {
 
   useEffect(() => {
     // New Expo/Firebase Notification Service (Consolidated)
-    NotificationService.initialize();
-    NotificationService.requestUserPermission();
-    const unsubscribeNotifications = NotificationService.setupListeners();
-    NotificationService.registerForPushNotifications('MOCK_JWT_TOKEN', 'tenant-1');
+    // NotificationService.initialize();
+    // NotificationService.requestUserPermission();
+    // const unsubscribeNotifications = NotificationService.setupListeners();
+    // NotificationService.registerForPushNotifications('MOCK_JWT_TOKEN', 'tenant-1');
 
     const unsubscribeNet = NetInfo.addEventListener((state) => {
       setConnected(!!state.isConnected && !!state.isInternetReachable);
     });
 
     return () => {
-      unsubscribeNotifications();
+      // unsubscribeNotifications();
       unsubscribeNet();
     };
   }, []);
