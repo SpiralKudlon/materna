@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useAssignedPatientsSWR, DashboardPatient } from '../../services/dashboard';
 import { AlertCircle, Calendar, ChevronRight } from 'lucide-react-native';
+import SymptomLoggingScreen from '../Symptoms/SymptomLoggingScreen';
 
 type FilterType = 'ALL' | 'HIGH_RISK' | 'UPCOMING_ANC';
 
@@ -11,6 +12,7 @@ export default function DashboardScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('ALL');
+  const [selectedPatient, setSelectedPatient] = useState<DashboardPatient | null>(null);
 
   const fetchPatients = () => {
     setIsRefreshing(true);
@@ -93,7 +95,10 @@ export default function DashboardScreen() {
   };
 
   const renderItem = ({ item }: { item: DashboardPatient }) => (
-    <TouchableOpacity className="bg-white border border-slate-200 p-4 rounded-lg mb-3 flex-row items-center justify-between active:bg-slate-50">
+    <TouchableOpacity 
+      onPress={() => setSelectedPatient(item)}
+      className="bg-white border border-slate-200 p-4 rounded-lg mb-3 flex-row items-center justify-between active:bg-slate-50"
+    >
       <View className="flex-1">
         <View className="flex-row justify-between items-start mb-2">
            <Text className="text-base font-bold text-slate-900">{item.fullName}</Text>
@@ -112,6 +117,16 @@ export default function DashboardScreen() {
       <ChevronRight color="#94a3b8" size={20} className="ml-3" />
     </TouchableOpacity>
   );
+
+  if (selectedPatient) {
+    return (
+      <SymptomLoggingScreen 
+        patientId={selectedPatient.id}
+        patientName={selectedPatient.fullName}
+        onBack={() => setSelectedPatient(null)}
+      />
+    );
+  }
 
   return (
     <View className="flex-1 bg-slate-50">

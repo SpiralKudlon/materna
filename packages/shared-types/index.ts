@@ -20,6 +20,27 @@ export const PatientSchema = z.object({
 
 export type Patient = z.infer<typeof PatientSchema>;
 
+export const SymptomSeveritySchema = z.enum(['MILD', 'MODERATE', 'SEVERE']);
+export type SymptomSeverity = z.infer<typeof SymptomSeveritySchema>;
+
+export const SymptomEntrySchema = z.object({
+    type: z.string(), // e.g., 'HEADACHE', 'BLEEDING'
+    severity: SymptomSeveritySchema,
+});
+
+export type SymptomEntry = z.infer<typeof SymptomEntrySchema>;
+
+export const DetailedSymptomLogSchema = z.object({
+    patientId: z.string().uuid(),
+    symptoms: z.array(SymptomEntrySchema).min(1, 'Select at least one symptom'),
+    notes: z.string().optional(),
+    temperature: z.number().optional(),
+    bloodPressureSys: z.number().optional(),
+    bloodPressureDia: z.number().optional(),
+});
+
+export type DetailedSymptomLog = z.infer<typeof DetailedSymptomLogSchema>;
+
 export const SymptomSchema = z.object({
     id: z.string().uuid(),
     patientId: z.string().uuid(),

@@ -1,13 +1,8 @@
 import { ApiClient } from '../api/client';
 
-export interface SymptomLogPayload {
-  patientId: string;
-  symptoms: string[];
-  notes?: string;
-  temperature?: number;
-  bloodPressureSys?: number;
-  bloodPressureDia?: number;
-}
+import { DetailedSymptomLog, DetailedSymptomLogSchema } from '../../../packages/shared-types';
+
+export interface SymptomLogPayload extends DetailedSymptomLog {}
 
 export async function logSymptom(
   tenantId: string,
