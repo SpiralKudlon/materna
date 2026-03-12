@@ -3,6 +3,7 @@ import { Text, View, FlatList, SafeAreaView, TouchableOpacity } from 'react-nati
 import { useNetworkSync } from './src/hooks/useNetworkSync';
 import { useSyncStore } from './src/store/syncStore';
 import { requestUserPermission, applyForegroundListener } from './src/services/fcm';
+import { NotificationService } from './src/services/notifications';
 import { logSymptom } from './src/services/symptoms';
 import NetInfo from '@react-native-community/netinfo';
 import { Wifi, WifiOff, CloudUpload, Activity, UserPlus, Home } from 'lucide-react-native';
@@ -19,11 +20,15 @@ export default function App() {
   const { queue } = useSyncStore();
 
   useEffect(() => {
+    // Legacy FCM setup
     requestUserPermission();
-    
     const unsubscribeFcm = applyForegroundListener((data) => {
       console.log('User tapped the push notification action:', data);
     });
+
+    // New Expo/Firebase Notification Service
+    const unsubscribeNotifications = NotificationService.setupListeners();
+    NotificationService.registerForPushNotifications('MOCK_JWT_TOKEN', 'tenant-1');
 
     const unsubscribeNet = NetInfo.addEventListener((state) => {
       setConnected(!!state.isConnected && !!state.isInternetReachable);
@@ -31,6 +36,7 @@ export default function App() {
 
     return () => {
       unsubscribeFcm();
+      unsubscribeNotifications();
       unsubscribeNet();
     };
   }, []);

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useAssignedPatientsSWR, DashboardPatient } from '../../services/dashboard';
-import { AlertCircle, Calendar, ChevronRight } from 'lucide-react-native';
+import { AlertCircle, Calendar, ChevronRight, Bell } from 'lucide-react-native';
 import SymptomLoggingScreen from '../Symptoms/SymptomLoggingScreen';
+import SOSButton from '../../components/SOSButton';
 
 type FilterType = 'ALL' | 'HIGH_RISK' | 'UPCOMING_ANC';
 
@@ -13,6 +14,7 @@ export default function DashboardScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [selectedPatient, setSelectedPatient] = useState<DashboardPatient | null>(null);
+  const [showSOSModal, setShowSOSModal] = useState(false);
 
   const fetchPatients = () => {
     setIsRefreshing(true);
@@ -130,6 +132,25 @@ export default function DashboardScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
+      {/* Header */}
+      <View className="bg-white px-5 pt-8 pb-4 border-b border-slate-200 flex-row justify-between items-center">
+        <View>
+          <Text className="text-2xl font-bold text-slate-900">Caseload</Text>
+          <Text className="text-sm text-slate-500 font-medium">{patients.length} assigned patients</Text>
+        </View>
+        <TouchableOpacity className="p-2 bg-slate-100 rounded-full">
+          <Bell color="#1e293b" size={20} />
+        </TouchableOpacity>
+      </View>
+
+      <SOSButton 
+        jwtToken="MOCK_JWT" 
+        tenantId="tenant-1" 
+        onActivated={() => {
+          Alert.alert('SOS SIGNAL SENT', 'The facility has been notified of an emergency. Please stay calm and follow procedures.');
+        }} 
+      />
+
       {/* Filter Bar */}
       <View className="px-5 py-4 bg-white border-b border-slate-200 flex-row">
         {renderFilterButton('All Patients', 'ALL')}

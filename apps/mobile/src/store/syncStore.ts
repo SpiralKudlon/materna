@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type SyncActionType = 'SYMPTOM_LOG' | 'PATIENT_UPDATE';
+export type SyncActionType = 'SYMPTOM_LOG' | 'PATIENT_UPDATE' | 'SOS_SIGNAL';
 
 export interface SyncJob {
   id: string;
