@@ -109,3 +109,16 @@ Thumbs.db
 
 # Turborepo
 .turbo
+
+# Expo / React Native (accidental root output)
+/android
+/ios
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# EAS
+.eas
+/dist

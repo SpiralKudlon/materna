@@ -7,6 +7,8 @@ import { logSymptom } from './src/services/symptoms';
 import NetInfo from '@react-native-community/netinfo';
 import { Wifi, WifiOff, CloudUpload, Activity, UserPlus, Home } from 'lucide-react-native';
 import RegistrationScreen from './src/screens/Registration/RegistrationScreen';
+import DashboardScreen from './src/screens/Dashboard/DashboardScreen';
+
 // Note: In real app, configure NativeWind globals. For demo, NativeWind processes className strings.
 
 export default function App() {
@@ -64,52 +66,8 @@ export default function App() {
       {currentView === 'registration' ? (
          <RegistrationScreen onComplete={() => setCurrentView('dashboard')} />
       ) : (
-         <>
-          <View className="m-5 p-5 bg-white rounded-xl shadow-sm border border-slate-200">
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-lg font-semibold text-slate-900">Sync Queue</Text>
-          <View className="bg-slate-100 px-2 py-1 rounded-md">
-            <Text className="text-slate-600 font-medium">{pendingCount} Pending</Text>
-          </View>
-        </View>
-        
-        <View className="mt-4 gap-y-3">
-          <TouchableOpacity 
-            className="bg-indigo-600 py-3 rounded-lg items-center flex-row justify-center active:bg-indigo-700"
-            onPress={handleSimulateLogSymptom}
-          >
-            <Activity color="#ffffff" size={18} />
-            <Text className="text-white font-semibold ml-2">Log Symptom</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            className="bg-amber-500 py-3 rounded-lg items-center flex-row justify-center active:bg-amber-600"
-            onPress={processQueue}
-          >
-            <CloudUpload color="#ffffff" size={18} />
-            <Text className="text-white font-semibold ml-2">Force Sync</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <FlatList
-        className="px-5"
-        data={queue}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View className="p-4 mb-3 bg-white rounded-lg border border-slate-200 flex-row justify-between items-center shadow-sm">
-            <View>
-              <Text className="text-sm font-bold text-slate-800">{item.type}</Text>
-              <Text className="text-xs text-slate-500 mt-1">{item.method} {item.endpoint}</Text>
-            </View>
-            <Text className="text-xs text-slate-400 font-medium">
-              {new Date(item.timestamp).toLocaleTimeString()}
-            </Text>
-          </View>
-        )}
-      />
-      </>
-    )}
+         <DashboardScreen />
+      )}
     </SafeAreaView>
   );
 }
