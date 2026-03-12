@@ -8,7 +8,7 @@ export interface SyncJob {
   id: string;
   type: SyncActionType;
   endpoint: string;
-  method: 'POST' | 'PATCH' | 'PUT';
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   payload: any;
   timestamp: number;
 }

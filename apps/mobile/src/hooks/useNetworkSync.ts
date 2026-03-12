@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import * as Network from 'expo-network';
+import NetInfo from '@react-native-community/netinfo';
 import { useSyncStore } from '../store/syncStore';
 import { Alert } from 'react-native';
 
@@ -13,8 +13,8 @@ export function useNetworkSync(jwtToken: string | null) {
     if (isSyncing || queue.length === 0 || !jwtToken) return;
 
     // Check actual network connectivity before starting
-    const networkState = await Network.getNetworkStateAsync();
-    if (!networkState.isConnected || !networkState.isInternetReachable) return;
+    const netState = await NetInfo.fetch();
+    if (!netState.isConnected || netState.isInternetReachable === false) return;
 
     setSyncing(true);
     let successCount = 0;
@@ -58,17 +58,17 @@ export function useNetworkSync(jwtToken: string | null) {
 
   // Hook into network state changes
   useEffect(() => {
-    // 1. Drains queue automatically when the app boots if online
+    // Reactively drain the queue when internet is restored
+    const unsubscribe = NetInfo.addEventListener(state => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        processQueue();
+      }
+    });
+
+    // Initial check
     processQueue();
 
-    // 2. Poll network state periodically as a fallback to catch reconnects.
-    // expo-network doesn't have a reliable event listener for *all* platforms yet,
-    // so a gentle interval ensures we don't leave data stranded.
-    const interval = setInterval(() => {
-      processQueue();
-    }, 15000); // Check every 15s
-
-    return () => clearInterval(interval);
+    return () => unsubscribe();
   }, [processQueue]);
 
   return { processQueue, pendingCount: queue.length };

@@ -1,89 +1,102 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button, FlatList, SafeAreaView } from 'react-native';
-import { useNetworkSync } from './hooks/useNetworkSync';
-import { useSyncStore } from './store/syncStore';
-import { requestUserPermission, applyForegroundListener } from './services/fcm';
-import * as Network from 'expo-network';
+import { Text, View, FlatList, SafeAreaView, TouchableOpacity } from 'react-native';
+import { useNetworkSync } from './src/hooks/useNetworkSync';
+import { useSyncStore } from './src/store/syncStore';
+import { requestUserPermission, applyForegroundListener } from './src/services/fcm';
+import { logSymptom } from './src/services/symptoms';
+import NetInfo from '@react-native-community/netinfo';
+import { Wifi, WifiOff, CloudUpload, Activity } from 'lucide-react-native';
+// Note: In real app, configure NativeWind globals. For demo, NativeWind processes className strings.
 
 export default function App() {
   const [isConnected, setConnected] = useState<boolean>(true);
   
-  // Initialize the sync hook with a pseudo-JWT (simulating logged in CHV)
   const { processQueue, pendingCount } = useNetworkSync('MOCK_JWT_TOKEN');
-  const { queue, enqueue } = useSyncStore();
+  const { queue } = useSyncStore();
 
   useEffect(() => {
-    // 1. Setup Push Notifications
     requestUserPermission();
     
-    // 2. Setup Foreground listener
-    const unsubscribe = applyForegroundListener((data) => {
+    const unsubscribeFcm = applyForegroundListener((data) => {
       console.log('User tapped the push notification action:', data);
     });
 
-    // 3. Monitor generic network state (simple UI indicator)
-    Network.getNetworkStateAsync().then((state) => {
+    const unsubscribeNet = NetInfo.addEventListener((state) => {
       setConnected(!!state.isConnected && !!state.isInternetReachable);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeFcm();
+      unsubscribeNet();
+    };
   }, []);
 
-  const handleSimulateLogSymptom = () => {
-    // Simulate what the UI would do when saving
-    enqueue({
-      type: 'SYMPTOM_LOG',
-      endpoint: '/symptoms',
-      method: 'POST',
-      payload: { patientId: 'patient-123', symptoms: ['FEVER', 'HEADACHE'] },
-    });
+  const handleSimulateLogSymptom = async () => {
+    const result = await logSymptom('tenant-1', {
+      patientId: 'patient-123',
+      symptoms: ['FEVER', 'HEADACHE']
+    }, 'MOCK_JWT');
+    console.log('[App] Log symptom result:', result.status);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Maternal-AI CHV App</Text>
-        <View style={[styles.statusBadge, { backgroundColor: isConnected ? '#4caf50' : '#f44336' }]}>
-          <Text style={styles.statusText}>{isConnected ? 'ONLINE' : 'OFFLINE'}</Text>
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <View className="p-5 bg-white flex-row justify-between items-center shadow-sm border-b border-slate-200">
+        <View className="flex-row items-center space-x-2">
+          <Activity color="#0f172a" size={24} />
+          <Text className="text-xl font-bold text-slate-900 ml-2">Maternal-AI</Text>
+        </View>
+        <View className={`px-3 py-1.5 rounded-full flex-row items-center ${isConnected ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+          {isConnected ? <Wifi color="#059669" size={16} /> : <WifiOff color="#e11d48" size={16} />}
+          <Text className={`ml-1 text-xs font-bold ${isConnected ? 'text-emerald-700' : 'text-rose-700'}`}>
+            {isConnected ? 'ONLINE' : 'OFFLINE'}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Offline Sync Queue</Text>
-        <Text style={styles.subtitle}>Pending items: {pendingCount}</Text>
+      <View className="m-5 p-5 bg-white rounded-xl shadow-sm border border-slate-200">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-lg font-semibold text-slate-900">Sync Queue</Text>
+          <View className="bg-slate-100 px-2 py-1 rounded-md">
+            <Text className="text-slate-600 font-medium">{pendingCount} Pending</Text>
+          </View>
+        </View>
         
-        <View style={styles.actions}>
-          <Button title="1. Log Symptom (Push to Queue)" onPress={handleSimulateLogSymptom} />
-          <View style={{ height: 10 }} />
-          <Button title="2. Force Trigger Sync Drain" color="#ff9800" onPress={processQueue} />
+        <View className="mt-4 gap-y-3">
+          <TouchableOpacity 
+            className="bg-indigo-600 py-3 rounded-lg items-center flex-row justify-center active:bg-indigo-700"
+            onPress={handleSimulateLogSymptom}
+          >
+            <Activity color="#ffffff" size={18} />
+            <Text className="text-white font-semibold ml-2">Log Symptom</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            className="bg-amber-500 py-3 rounded-lg items-center flex-row justify-center active:bg-amber-600"
+            onPress={processQueue}
+          >
+            <CloudUpload color="#ffffff" size={18} />
+            <Text className="text-white font-semibold ml-2">Force Sync</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       <FlatList
+        className="px-5"
         data={queue}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.queueItem}>
-            <Text style={styles.queueText}>{item.type} → {item.endpoint}</Text>
-            <Text style={styles.queueTime}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
+          <View className="p-4 mb-3 bg-white rounded-lg border border-slate-200 flex-row justify-between items-center shadow-sm">
+            <View>
+              <Text className="text-sm font-bold text-slate-800">{item.type}</Text>
+              <Text className="text-xs text-slate-500 mt-1">{item.method} {item.endpoint}</Text>
+            </View>
+            <Text className="text-xs text-slate-400 font-medium">
+              {new Date(item.timestamp).toLocaleTimeString()}
+            </Text>
           </View>
         )}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { padding: 20, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: 'bold' },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  card: { margin: 20, padding: 20, backgroundColor: '#fff', borderRadius: 8, elevation: 2 },
-  cardTitle: { fontSize: 18, fontWeight: '600', marginBottom: 5 },
-  subtitle: { color: '#666', marginBottom: 20 },
-  actions: { marginTop: 10 },
-  queueItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#ddd', flexDirection: 'row', justifyContent: 'space-between' },
-  queueText: { fontSize: 14, color: '#333' },
-  queueTime: { fontSize: 12, color: '#999' }
-});

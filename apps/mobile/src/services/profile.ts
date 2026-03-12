@@ -1,7 +1,5 @@
+import { ApiClient } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Network from 'expo-network';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface PatientProfile {
   id: string;
@@ -23,36 +21,20 @@ export async function fetchPatientProfile(
 ): Promise<{ profile: PatientProfile; isOfflineCached: boolean }> {
   const cacheKey = `${CACHE_KEY_PREFIX}${patientId}`;
   
-  // 1. Check Network Connectivity
-  const network = await Network.getNetworkStateAsync();
+  // 1. ApiClient performs GET (does not queue, falls through on error)
+  const { data: profile, status } = await ApiClient.request<PatientProfile>(`/api/v1/patients/${patientId}`, {
+    method: 'GET',
+    jwtToken,
+    tenantId,
+  });
 
-  if (network.isConnected && network.isInternetReachable) {
-    try {
-      // 2a. Fetch from API
-      const response = await fetch(`${API_BASE_URL}/api/v1/patients/${patientId}`, {
-        headers: {
-          'x-tenant-id': tenantId,
-          'Authorization': `Bearer ${jwtToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const profile: PatientProfile = await response.json();
-
-      // 3. Save to Offline Cache asynchronously
-      AsyncStorage.setItem(cacheKey, JSON.stringify(profile)).catch(console.error);
-
-      return { profile, isOfflineCached: false };
-    } catch (err) {
-      console.warn('[ProfileService] API fetch failed, falling back to cache:', err);
-      // Fall through to cache logic
-    }
+  if (status === 'sent' && profile) {
+    // 2. Save to Offline Cache asynchronously
+    AsyncStorage.setItem(cacheKey, JSON.stringify(profile)).catch(console.error);
+    return { profile, isOfflineCached: false };
   }
 
-  // 2b. Offline Fallback
+  // 3. Offline Fallback
   const cachedData = await AsyncStorage.getItem(cacheKey);
   if (cachedData) {
     return {
